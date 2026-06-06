@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml)
 
+**▶ [Live demo](https://strategic-tracker-mu.vercel.app)** — one click signs you in as a CEO or a team member, with a fictional team's data to explore.
+
 A small web app for keeping a leadership team aligned week to week. Each direct
 report logs a quick weekly check-in against their strategic objectives, and the
 leader gets a live dashboard showing what's on track, what's at risk, who needs
