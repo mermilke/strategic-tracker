@@ -3,6 +3,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
+// On the public demo deployment this shows one-click "explore" logins.
+// Off by default so a real install never exposes the demo accounts.
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -67,6 +71,13 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true); setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { setError(error.message); setLoading(false) }
+    else router.push('/dashboard')
+  }
+
+  async function quickLogin(demoEmail) {
+    setLoading(true); setError('')
+    const { error } = await supabase.auth.signInWithPassword({ email: demoEmail, password: 'demo1234' })
     if (error) { setError(error.message); setLoading(false) }
     else router.push('/dashboard')
   }
@@ -161,6 +172,27 @@ export default function LoginPage() {
             </div>
           ) : (
             <>
+              {DEMO_MODE && mode !== 'forgot' && (
+                <div style={{ marginBottom: 20, padding: 16, borderRadius: 12, background: 'rgba(37, 99, 235,0.06)', border: '1px solid rgba(37, 99, 235,0.2)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2563EB', marginBottom: 4 }}>Live demo</div>
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                    Jump in with sample data, no sign-up needed.
+                  </p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" onClick={() => quickLogin('jordan.hayes@example.com')} disabled={loading}
+                      style={{ flex: 1, padding: '10px 0', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none',
+                        cursor: loading ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #2563EB, #1D4ED8)', color: 'white' }}>
+                      Enter as CEO
+                    </button>
+                    <button type="button" onClick={() => quickLogin('dana.whitfield@example.com')} disabled={loading}
+                      style={{ flex: 1, padding: '10px 0', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        cursor: loading ? 'not-allowed' : 'pointer', background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+                      Enter as a team member
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* mode tabs: password + magic only, forgot is a link */}
               {mode !== 'forgot' && (
                 <div className="flex rounded-lg p-1 mb-6" style={{ background: 'var(--bg-base)' }}>
