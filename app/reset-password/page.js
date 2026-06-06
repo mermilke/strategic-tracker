@@ -161,7 +161,7 @@ export default function ResetPasswordPage() {
                     <li>The email rate limit was reached</li>
                   </ul>
                   <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.5, padding: '8px 12px', borderRadius: 8, background: 'rgba(37, 99, 235,0.06)', border: '1px solid rgba(37, 99, 235,0.12)' }}>
-                    💡 Ask your admin to generate a fresh reset link from the admin panel — it bypasses email limits.
+                    💡 Ask your admin to generate a fresh reset link from the admin panel -- it bypasses email limits.
                   </p>
                   <div className="flex gap-3 justify-center">
                     <button onClick={() => router.push('/login')} style={{

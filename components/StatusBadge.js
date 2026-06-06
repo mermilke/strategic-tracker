@@ -1,7 +1,7 @@
 import { STATUS_CONFIG } from '../lib/utils'
 
 export default function StatusBadge({ status, size = 'md' }) {
-  if (!status) return <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
+  if (!status) return <span className="text-xs" style={{ color: 'var(--text-muted)' }}>--</span>
 
   const config = STATUS_CONFIG[status]
   if (!config) return null

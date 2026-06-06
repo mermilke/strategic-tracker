@@ -21,7 +21,7 @@ The whole stack is free:
 1. Go to https://nodejs.org
 2. Download the **LTS** version (the left button)
 3. Run the installer and click through with the defaults
-4. Open VS Code, then open a new Terminal (Terminal menu → New Terminal)
+4. Open VS Code, then open a new Terminal (Terminal menu > New Terminal)
 5. Type `node --version` and press Enter. You should see something like `v20.x.x`
 
 ### Step 2: Get the project folder
@@ -30,7 +30,7 @@ Two ways to do this.
 **Option A, download the zip (easiest):**
 - You'll get the project as a zip file
 - Unzip it somewhere easy to find, like `C:\Projects\ceo-tracker`
-- In VS Code: File → Open Folder, then pick that folder
+- In VS Code: File > Open Folder, then pick that folder
 
 **Option B, use this repo directly:**
 - In the VS Code Terminal: `cd C:\Projects` (or wherever you want it)
@@ -106,7 +106,7 @@ open your browser to **http://localhost:3000** and your app is running.
 4. You're logged in now, but your role still needs to be set to `admin`
 
 ### Step 9: Set your role to admin
-1. Go back to Supabase → **Table Editor** → `users` table
+1. Go back to Supabase > **Table Editor** > `users` table
 2. Find the row with your email
 3. Click the `role` cell and change it from `direct_report` to `admin`
 4. Click Save
@@ -114,10 +114,10 @@ open your browser to **http://localhost:3000** and your app is running.
 Refresh your browser and you'll see the CEO Dashboard and Manage Team menu.
 
 ### Step 10: Invite your direct reports
-1. In Supabase → **Authentication** → **Users** → **Invite user**
+1. In Supabase > **Authentication** > **Users** > **Invite user**
 2. Enter their email address
 3. They'll get an email to set a password
-4. Once they sign up, go to **Table Editor** → `users`, find their row, and their role is already `direct_report`
+4. Once they sign up, go to **Table Editor** > `users`, find their row, and their role is already `direct_report`
 5. If you want someone to have CEO-view only (your boss, say), change their role to `ceo`
 
 ### Step 11: Set up objectives
@@ -184,7 +184,7 @@ git push -u origin main
 - Remind your team every Monday. You can share the direct link to the check-in page.
 - To archive old objectives, go to Manage Team and use the Active/Archived toggle.
 - Add new sub-objectives anytime; they show up in the next check-in right away.
-- To export data to Excel: Supabase → Table Editor → `weekly_checkins` → Download CSV.
+- To export data to Excel: Supabase > Table Editor > `weekly_checkins` > Download CSV.
 
 ---
 

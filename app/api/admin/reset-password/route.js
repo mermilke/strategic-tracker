@@ -35,7 +35,7 @@ export async function POST(request) {
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!serviceKey) {
       return NextResponse.json({
-        error: 'Service role key not configured. Add SUPABASE_SERVICE_ROLE_KEY to your .env.local file. Find it in Supabase → Settings → API → service_role key.'
+        error: 'Service role key not configured. Add SUPABASE_SERVICE_ROLE_KEY to your .env.local file. Find it in Supabase > Settings > API > service_role key.'
       }, { status: 500 })
     }
 

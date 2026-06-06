@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml)
 
-**▶ [Live demo](https://strategic-tracker-mu.vercel.app)** — one click signs you in as a CEO or a team member, with a fictional team's data to explore.
+**▶ [Live demo](https://strategic-tracker-mu.vercel.app)** -- one click signs you in as a CEO or a team member, with a fictional team's data to explore.
 
 A small web app for keeping a leadership team aligned week to week. Each direct
 report logs a quick weekly check-in against their strategic objectives, and the
@@ -75,6 +75,51 @@ Automation:
 - The Smartsheet API for an optional extra discussion feed
 - Recharts, date-fns, and Tailwind CSS
 - Runs on Vercel; the reminder cron is driven by GitHub Actions
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Browser["Browser (Next.js client)"]
+    GHA["GitHub Actions (cron)"]
+
+    subgraph Vercel["Vercel"]
+        Pages["Pages: dashboard, check-in, 1:1 notes, admin"]
+        API["Route handlers (/api)"]
+    end
+
+    DB[("Supabase Postgres<br/>Auth + row-level security + Realtime")]
+    Claude["Claude Sonnet<br/>(Vercel AI Gateway)"]
+    Graph["Microsoft Graph<br/>(1:1 calendar)"]
+    Resend["Resend<br/>(reminder email)"]
+
+    Browser --> Pages
+    Pages -->|"anon key, RLS applies"| DB
+    Pages --> API
+    API -->|"service role"| DB
+    API -->|"weekly briefing"| Claude
+    API -->|"calendar lookups"| Graph
+    API -->|"reminder email"| Resend
+    GHA -->|"fires at 4pm in each timezone"| API
+```
+
+<details>
+<summary>Plain-text version</summary>
+
+```
+Browser (Next.js client)
+    |-- reads/writes (anon key, RLS applies) --> Supabase Postgres
+    |                                            (Auth + row-level security + Realtime)
+    '-- calls --> Route handlers (/api)
+                      |-- service role --------> Supabase Postgres
+                      |-- weekly briefing -----> Claude Sonnet (Vercel AI Gateway)
+                      |-- calendar lookups ----> Microsoft Graph
+                      '-- reminder email ------> Resend
+
+GitHub Actions (cron) -- fires at 4pm per timezone --> /api/cron/reminders
+```
+
+</details>
 
 ## How it's put together
 

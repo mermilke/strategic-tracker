@@ -79,7 +79,7 @@ export default function AdminPage() {
           validSubs.map((title, i) => ({ pending_objective_id: obj.id, title, sort_order: i }))
         )
       }
-      showMsg('Objective added for pending user — will transfer when they sign up!')
+      showMsg('Objective added for pending user -- will transfer when they sign up!')
     } else {
       const { data: obj, error } = await supabase.from('strategic_objectives').insert({
         owner_id: newObj.userId, title: newObj.title,
@@ -105,7 +105,7 @@ export default function AdminPage() {
   async function archiveObj(id) {
     await supabase.from('strategic_objectives').update({ is_active: false }).eq('id', id)
     setEditingObjs(prev => { const n = { ...prev }; delete n[id]; return n })
-    showMsg('Objective archived — find it in the Archived section')
+    showMsg('Objective archived -- find it in the Archived section')
     await loadData()
   }
 
@@ -305,7 +305,7 @@ export default function AdminPage() {
       } catch {
         // clipboard blocked, fall back to a prompt
         prompt(`Reset link for ${userName || userEmail} (copy this):`, data.link)
-        showMsg('Reset link generated — copy it from the dialog above.')
+        showMsg('Reset link generated -- copy it from the dialog above.')
       }
     } catch (err) {
       showMsg('Network error: ' + err.message, 'error')
@@ -399,7 +399,7 @@ export default function AdminPage() {
                         onSave={loadData}
                       />
                       {pObjs.length === 0 && (
-                        <p className="text-xs text-center py-3" style={{ color: 'var(--text-muted)' }}>No objectives yet — add one below.</p>
+                        <p className="text-xs text-center py-3" style={{ color: 'var(--text-muted)' }}>No objectives yet -- add one below.</p>
                       )}
                       <AddObjInline userId={p.id} onAdd={(_, title, date, subs) => addObjForPendingUser(p.email, title, date, subs)} nextNum={pObjs.length + 1} />
                     </div>
@@ -596,7 +596,7 @@ export default function AdminPage() {
             {bugReports.length === 0 ? (
               <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>🐛</div>
-                <p className="text-sm">No bug reports yet — that&apos;s a good sign!</p>
+                <p className="text-sm">No bug reports yet -- that&apos;s a good sign!</p>
               </div>
             ) : (
               bugReports.map(bug => (
@@ -667,7 +667,7 @@ export default function AdminPage() {
             {/* password reset links */}
             <div className="rounded-xl p-6" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
               <h2 className="font-display text-xl text-slate-800 mb-2">Password Reset</h2>
-              <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>Generate a password reset link for any team member. The link is copied to your clipboard — share it with them directly.</p>
+              <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>Generate a password reset link for any team member. The link is copied to your clipboard -- share it with them directly.</p>
               <div className="space-y-2">
                 {directReports.map(u => (
                   <div key={u.id} className="flex items-center justify-between px-4 py-3 rounded-lg" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
@@ -728,7 +728,7 @@ export default function AdminPage() {
               </button>
             </div>
             <div className="mt-6 px-4 py-3 rounded-lg text-xs" style={{ background: 'rgba(37, 99, 235,0.06)', color: '#2563EB', border: '1px solid rgba(37, 99, 235,0.15)', lineHeight: 1.7 }}>
-              💡 To send their login invite: Supabase → Authentication → Users → Invite user → enter their email.
+              💡 To send their login invite: Supabase → Authentication → Users → Invite user, then enter their email.
             </div>
           </div>
         )}

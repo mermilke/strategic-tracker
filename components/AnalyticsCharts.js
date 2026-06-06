@@ -180,7 +180,7 @@ export default function AnalyticsCharts({ data, weekOptions }) {
                         border: `1px solid ${cell.submitted === 0 ? 'rgba(0,0,0,0.05)' : cell.pct >= 1 ? 'rgba(52,211,153,0.4)' : 'rgba(245,158,11,0.4)'}`,
                         fontSize: 9, color: cell.submitted === 0 ? 'var(--text-muted)' : cell.pct >= 1 ? '#34D399' : '#F59E0B',
                       }} title={`${cell.submitted}/${cell.total} submitted`}>
-                        {cell.submitted === 0 ? '—' : cell.pct >= 1 ? '✓' : `${cell.submitted}`}
+                        {cell.submitted === 0 ? '--' : cell.pct >= 1 ? '✓' : `${cell.submitted}`}
                       </div>
                     </td>
                   ))}

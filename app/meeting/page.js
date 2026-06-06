@@ -510,7 +510,7 @@ function MeetingContent() {
               border: '1px solid var(--border)',
             }}>
               <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>
-                Check-in Summary — {formatWeekLabel(selectedWeek)}
+                Check-in Summary -- {formatWeekLabel(selectedWeek)}
               </h2>
 
               {(() => {

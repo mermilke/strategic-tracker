@@ -216,7 +216,7 @@ export default function WeeklyBriefing({ selectedWeek, currentUser }) {
               No briefing yet for the week of {formatWeekLabel(selectedWeek)}.
             </p>
             <p style={{ margin: '6px 0 0 0', fontSize: 13, color: '#94A3B8' }}>
-              One click → streaming executive briefing.
+              Generate one to see this week's summary.
             </p>
           </div>
         )}
@@ -388,9 +388,9 @@ function Cursor() {
 
 function DevPanel({ meta }) {
   const [open, setOpen] = useState(false)
-  const fmtTokens = n => n?.toLocaleString() || '—'
-  const fmtCost = c => c == null ? '—' : `~$${(c / 100).toFixed(3)}`
-  const fmtLatency = ms => ms == null ? '—' : `${(ms / 1000).toFixed(1)}s`
+  const fmtTokens = n => n?.toLocaleString() || '--'
+  const fmtCost = c => c == null ? '--' : `~$${(c / 100).toFixed(3)}`
+  const fmtLatency = ms => ms == null ? '--' : `${(ms / 1000).toFixed(1)}s`
 
   // close popover on Escape or outside click
   useEffect(() => {

@@ -568,7 +568,7 @@ function CheckinForm() {
 
                       {isCommentRequired && (
                         <div style={{ color: hasError ? '#F87171' : '#F59E0B', fontSize: 11, marginTop: 2 }}>
-                          ⚠ Comment required — status changed to {STATUS_CONFIG[entry.status]?.label}
+                          ⚠ Comment required -- status changed to {STATUS_CONFIG[entry.status]?.label}
                         </div>
                       )}
                       {commentVisible ? (

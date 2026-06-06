@@ -19,15 +19,15 @@ enforcement boundary, not the UI.
 
 Six core tables, all keyed off Supabase auth:
 
-- `users` — profile + role (`ceo`, `admin`, `direct_report`) + timezone, one row
+- `users` -- profile + role (`ceo`, `admin`, `direct_report`) + timezone, one row
   per auth user, created by a trigger on signup.
-- `strategic_objectives` → `sub_objectives` — the goal tree. An objective can
+- `strategic_objectives` and `sub_objectives` -- the goal tree. An objective can
   carry an `opportunity_target` to become a count-based goal (e.g. "close 5
   pilots"), in which case its deals live in `objective_opportunities`.
-- `weekly_checkins` — one row per sub-objective per week (`UNIQUE(sub_objective_id,
+- `weekly_checkins` -- one row per sub-objective per week (`UNIQUE(sub_objective_id,
   week_start)`), holding the status enum and the report's notes.
-- `meeting_notes` — a shared notes doc per person per week for 1:1s.
-- `ai_briefings` — one cached, generated briefing per week.
+- `meeting_notes` -- a shared notes doc per person per week for 1:1s.
+- `ai_briefings` -- one cached, generated briefing per week.
 
 Weeks are always Mondays (`YYYY-MM-DD`), which makes "this week" a plain string
 comparison instead of date-range math in most places.
@@ -50,7 +50,7 @@ browser.
 This is the most involved feature. The flow:
 
 1. `lib/briefing-context.js` assembles everything the model should see for a
-   week — each report's objectives, this-week vs last-week check-ins (so the
+   week -- each report's objectives, this-week vs last-week check-ins (so the
    model can spot changes), opportunities, recent 1:1 notes, and a best-effort
    calendar pull for upcoming 1:1s. It's deliberately separate from the route so
    the context shape can be reasoned about on its own.

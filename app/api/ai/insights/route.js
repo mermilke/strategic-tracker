@@ -43,8 +43,8 @@ const BriefingSchema = z.object({
     'If the week was flat, say so plainly.'
   ),
   top_items: z.array(z.string()).max(3).describe(
-    '0–3 most important things the CEO needs to know. ' +
-    'Skip if nothing material happened — empty array is fine. ' +
+    '0-3 most important things the CEO needs to know. ' +
+    'Skip if nothing material happened -- empty array is fine. ' +
     'No need to invent a third just because the field allows 3.'
   ),
   risks: z.array(z.object({
@@ -55,7 +55,7 @@ const BriefingSchema = z.object({
   momentum: z.array(z.object({
     item: z.string().describe('Status flip, sub-objective completed, or new opportunity logged.'),
     owner_name: z.string().nullable(),
-  })).describe('Genuine wins only — status flips, completions, new opportunities. Empty if a hold-the-line week.'),
+  })).describe('Genuine wins only -- status flips, completions, new opportunities. Empty if a hold-the-line week.'),
   talking_points: z.array(z.object({
     dr_name: z.string(),
     upcoming_meeting_label: z.string().nullable().describe(
@@ -66,7 +66,7 @@ const BriefingSchema = z.object({
     ),
   })).describe('Only DRs with material to discuss. Skip DRs whose week was uneventful.'),
   data_caveats: z.array(z.string()).describe(
-    'Honest call-outs only when material to the CEO — e.g. "no upcoming 1:1 found with a direct report". ' +
+    'Honest call-outs only when material to the CEO -- e.g. "no upcoming 1:1 found with a direct report". ' +
     'Skip operational noise (reminders, narrative length, etc.). Empty if nothing worth flagging.'
   ),
 })
@@ -78,42 +78,42 @@ VOICE:
 - Direct, factual, prioritized.
 - Punchy sentences. No buzzwords, no hedging, no "I'd recommend", no "consider".
 - First name is fine in the headline and in prose ("Dana hasn't…", "Priya flipped…"). Use FULL name (first + last) when used as an attribution label (e.g. the "owner" of a risk, the dr_name field in talking_points).
-- Honest about thin-data weeks — if nothing material happened, say so. Do not invent drama.
+- Honest about thin-data weeks -- if nothing material happened, say so. Do not invent drama.
 
-LANGUAGE — STATUS VALUES:
-- The status enum uses underscored values (not_started, on_track, at_risk, off_track, on_hold, completed). NEVER write these in prose — convert to natural English: "not started", "on track", "at risk", "off track", "on hold", "completed". e.g. write "two sub-objectives stuck at not started", NOT "stuck at not_started".
+LANGUAGE -- STATUS VALUES:
+- The status enum uses underscored values (not_started, on_track, at_risk, off_track, on_hold, completed). NEVER write these in prose -- convert to natural English: "not started", "on track", "at risk", "off track", "on hold", "completed". e.g. write "two sub-objectives stuck at not started", NOT "stuck at not_started".
 
 SECTIONS (you fill these via the structured schema):
 - headline: one sentence summarizing the week.
 - top_items: the 1-3 most important things the CEO needs to know. Empty if none.
 - risks: real risks/blockers with severity. Empty if none.
-- momentum: genuine wins only — status flips (e.g. at-risk → on-track), sub-objective completions, new opportunities logged. NOT "submitted on time" or "consistency". Empty if a hold-the-line week.
+- momentum: genuine wins only -- status flips (e.g. at-risk to on-track), sub-objective completions, new opportunities logged. NOT "submitted on time" or "consistency". Empty if a hold-the-line week.
 - talking_points: per-DR prep for upcoming 1:1s. Only include DRs with something specific worth raising. Use the upcoming_meeting_label from the calendar data if present.
 - data_caveats: only flag things material to the CEO (e.g. "no upcoming 1:1 found with a direct report"). Skip operational noise.
 
 RULES:
-- Assume DRs will NEVER write narrative in their check-ins. Status fields are the signal. Do not complain that progress_this_week is empty or "Yes" — that is the norm.
+- Assume DRs will NEVER write narrative in their check-ins. Status fields are the signal. Do not complain that progress_this_week is empty or "Yes" -- that is the norm.
 - Do not mention reminder emails or nudge behavior.
 - Compare this week vs previous week to identify real changes.
 - A sub-objective that has been "not started" or "on hold" for multiple consecutive weeks is a genuine risk.
 - A sub-objective that flipped status this week is genuine momentum.
-- CHECK-IN TIMING (very important — read carefully):
+- CHECK-IN TIMING (very important -- read carefully):
   - Each DR is expected to submit their check-in by the day of their 1:1 with the leader.
   - Inspect today_date and the DR's meetings_next_14d list (which now includes CANCELLED meetings, flagged with is_cancelled: true).
-  - If the DR's next confirmed 1:1 is today or in the future → check-in is NOT yet due. Frame as "check-in not yet due — 1:1 is Thursday". DO NOT say "missed".
-  - If the DR's most recent scheduled 1:1 this week was CANCELLED and no replacement is on the calendar yet → frame as "1:1 cancelled; check-in not late — awaiting reschedule". DO NOT say "missed".
+  - If the DR's next confirmed 1:1 is today or in the future, the check-in is NOT yet due. Frame as "check-in not yet due, 1:1 is Thursday". DO NOT say "missed".
+  - If the DR's most recent scheduled 1:1 this week was CANCELLED and no replacement is on the calendar yet, frame as "1:1 cancelled; check-in not late, awaiting reschedule". DO NOT say "missed".
   - Only call a check-in "missed" / "didn't submit" if a confirmed 1:1 already happened this week AND no check-in exists. That is a real miss.
-  - This applies to the headline too. If neither DR has a real miss, the headline should NOT say they "didn't submit" — describe the actual situation (e.g. "Quiet week — Dana's 1:1 is Thursday; Priya's 1:1 was cancelled, awaiting reschedule").
+  - This applies to the headline too. If neither DR has a real miss, the headline should NOT say they "didn't submit" -- describe the actual situation (e.g. "Quiet week -- Dana's 1:1 is Thursday; Priya's 1:1 was cancelled, awaiting reschedule").
 - Each DR's latest_meeting_note holds what was discussed in their most recent 1:1. Use it for continuity in talking_points: follow up on the commitments or blockers raised there, and don't re-raise something already resolved.
 - Use objective short_title if present; otherwise the full title.
-- ONE entry per DR in talking_points. Never include the same DR more than once — consolidate their points under a single entry.`
+- ONE entry per DR in talking_points. Never include the same DR more than once -- consolidate their points under a single entry.`
 
 function userPromptFromContext(ctx) {
   const today = new Date().toISOString().slice(0, 10)
   const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long', timeZone: APP_TIMEZONE })
   return [
     `Today: ${today} (${dayName}, the leader's local time).`,
-    `Briefing week: Mon ${ctx.week_start} → Sun (compare against previous week: ${ctx.previous_week_start}).`,
+    `Briefing week: Mon ${ctx.week_start} to Sun (compare against previous week: ${ctx.previous_week_start}).`,
     `Calendar fetch status: ${ctx.calendar_status}.`,
     '',
     'DIRECT REPORTS WITH FULL DATA:',
@@ -155,7 +155,7 @@ async function gateRequest(request) {
   if (!auth) return { error: 'Unauthorized', status: 401 }
   const role = auth.profile?.role
   if (role !== 'ceo' && role !== 'admin') {
-    return { error: 'Forbidden — CEO/admin only', status: 403 }
+    return { error: 'Forbidden -- CEO/admin only', status: 403 }
   }
   return { auth }
 }

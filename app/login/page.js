@@ -42,7 +42,7 @@ export default function LoginPage() {
       setMode('forgot')
       window.history.replaceState(null, '', window.location.pathname)
     } else if (params.get('error') === 'auth_callback_failed') {
-      setError('Authentication failed. Your link may have expired — try requesting a new one.')
+      setError('Authentication failed. Your link may have expired -- try requesting a new one.')
       window.history.replaceState(null, '', window.location.pathname)
     }
   }, [])
@@ -162,7 +162,7 @@ export default function LoginPage() {
               </p>
               {resetSent && (
                 <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.5, padding: '8px 12px', borderRadius: 8, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.1)' }}>
-                  💡 If the email doesn't arrive, ask your admin — they can generate a reset link for you directly from the admin panel.
+                  💡 If the email doesn't arrive, ask your admin -- they can generate a reset link for you directly from the admin panel.
                 </p>
               )}
               <button onClick={() => { setMagicSent(false); setResetSent(false); setMode('password') }}
