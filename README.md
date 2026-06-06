@@ -88,6 +88,9 @@ direct report can only read and write their own objectives and check-ins, while
 the leader and admins see everyone. The server-only routes (briefing, cron,
 admin password reset) use the service-role key and never run in the browser.
 
+For the deeper version, including the AI briefing pipeline and the
+timezone-aware reminder logic, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Running it locally
 
 You'll need Node.js 18+ and a free [Supabase](https://supabase.com) project.
@@ -147,6 +150,20 @@ deployed base URL) and a `CRON_SECRET` Actions secret that matches the
   lookup and the reminder timing.
 - **Reminder email** needs a Resend API key and a verified sender address.
 - **Smartsheet** stays off unless `NEXT_PUBLIC_SMARTSHEET_USER_EMAIL` is set.
+
+## Roadmap
+
+Things I'd build next, roughly in order of value:
+
+- **Comment loop** so the leader can leave a question on a specific at-risk item
+  and the report sees it on their next check-in. Right now that conversation only
+  happens in the free-form 1:1 notes.
+- **Email or PDF of the weekly briefing**, so it can go out Monday morning
+  instead of living only on the dashboard.
+- **Objective target dates surfaced** as countdowns and overdue flags (the data
+  is already there).
+- **Slack/Teams delivery** of the briefing and at-risk alerts.
+- **TypeScript** across the codebase now that the data shapes are stable.
 
 ## License
 
