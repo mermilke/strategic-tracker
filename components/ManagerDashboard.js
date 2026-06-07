@@ -5,38 +5,11 @@ import { supabase } from '../lib/supabase'
 import StatusBadge from './StatusBadge'
 import Spinner from './Spinner'
 import HistoryModal from './HistoryModal'
-import { getCurrentWeekStart, formatWeekLabel, statusTint } from '../lib/utils'
+import { getCurrentWeekStart, formatWeekLabel, statusTint, toLetter } from '../lib/utils'
+import { calcWeeksNoProgress, STATUS_PROGRESS, STATUS_BAR_COLOR } from '../lib/dashboard'
 import { startOfWeek, format } from 'date-fns'
 import AnalyticsCharts from './AnalyticsCharts'
 import WeeklyBriefing from './WeeklyBriefing'
-
-const toLetter = i => String.fromCharCode(65 + i)
-
-// consecutive weeks with no update, counting back from selectedWeek. completed subs return 0.
-function calcWeeksNoProgress(sub, weekOptions, selectedWeek) {
-  const selectedIdx = weekOptions.indexOf(selectedWeek)
-  const relevantWeeks = selectedIdx >= 0 ? weekOptions.slice(0, selectedIdx + 1) : weekOptions
-
-  // completed subs don't need updates
-  const latestCheckin = [...relevantWeeks].reverse().reduce((found, w) => found || sub.weekly_checkins?.find(ch => ch.week_start === w), null)
-  if (latestCheckin?.status === 'completed') return 0
-
-  const recentWeeks = [...relevantWeeks].reverse()
-  let count = 0
-  for (const week of recentWeeks) {
-    const c = sub.weekly_checkins?.find(ch => ch.week_start === week)
-    if (!c || !c.progress_this_week) {
-      count++
-    } else {
-      break // streak broken
-    }
-  }
-  return count
-}
-
-// Bar fill % and color for the snapshot tiles, keyed by status.
-const STATUS_PROGRESS = { completed: 100, on_track: 85, at_risk: 50, off_track: 18, on_hold: 10, not_started: 5 }
-const STATUS_BAR_COLOR = { completed: '#2563EB', on_track: '#34D399', at_risk: '#F59E0B', off_track: '#D62027', on_hold: '#A78BFA', not_started: '#94A3B8' }
 
 export default function ManagerDashboard({ currentUser }) {
   const router = useRouter()
