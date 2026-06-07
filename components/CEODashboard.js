@@ -1,10 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import StatusBadge from './StatusBadge'
-import { getCurrentWeekStart, getLastWeekStart, formatWeekLabel } from '../lib/utils'
-import { startOfWeek, subWeeks, format } from 'date-fns'
+import Spinner from './Spinner'
+import { getCurrentWeekStart, formatWeekLabel, STATUS_HEX, STATUS_LABELS, statusTint } from '../lib/utils'
+import { startOfWeek, format } from 'date-fns'
 import AnalyticsCharts from './AnalyticsCharts'
 import WeeklyBriefing from './WeeklyBriefing'
 
@@ -32,8 +33,9 @@ function calcWeeksNoProgress(sub, weekOptions, selectedWeek) {
   return count
 }
 
-const STATUS_HEX = { not_started: '#94A3B8', on_track: '#34D399', at_risk: '#F59E0B', off_track: '#D62027', on_hold: '#A78BFA', completed: '#38BDF8' }
-const STATUS_LABELS = { not_started: 'Not Started', on_track: 'On Track', at_risk: 'At Risk', off_track: 'Off Track', on_hold: 'On Hold', completed: 'Completed' }
+// Bar fill % and color for the snapshot tiles, keyed by status.
+const STATUS_PROGRESS = { completed: 100, on_track: 85, at_risk: 50, off_track: 18, on_hold: 10, not_started: 5 }
+const STATUS_BAR_COLOR = { completed: '#2563EB', on_track: '#34D399', at_risk: '#F59E0B', off_track: '#D62027', on_hold: '#A78BFA', not_started: '#94A3B8' }
 
 export default function CEODashboard({ currentUser }) {
   const router = useRouter()
@@ -64,10 +66,10 @@ export default function CEODashboard({ currentUser }) {
   }
 
   const thisWeek = getCurrentWeekStart()
-  const lastWeek = getLastWeekStart()
 
-  // earliest week comes from the check-in data so the range covers all real history
-  const weekOptions = (() => {
+  // earliest week comes from the check-in data so the range covers all real
+  // history. Memoized so it only recomputes when the data changes.
+  const weekOptions = useMemo(() => {
     const weeks = []
     const cur = startOfWeek(new Date(), { weekStartsOn: 1 })
 
@@ -89,7 +91,7 @@ export default function CEODashboard({ currentUser }) {
       w = new Date(w.getTime() + 7 * 24 * 60 * 60 * 1000)
     }
     return weeks
-  })()
+  }, [data])
   const weekIdx = weekOptions.indexOf(selectedWeek)
   const goBack = () => { if (weekIdx > 0) setSelectedWeek(weekOptions[weekIdx - 1]) }
   const goForward = () => { if (weekIdx < weekOptions.length - 1) setSelectedWeek(weekOptions[weekIdx + 1]) }
@@ -168,11 +170,7 @@ export default function CEODashboard({ currentUser }) {
   const totalNeedsSupport = data.reduce((sum, u) => sum + u.needsSupport, 0)
   const totalNotSubmitted = data.filter(u => u.submitted < u.totalSubs).length
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="w-6 h-6 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <Spinner />
 
   return (
     <div>
@@ -196,8 +194,6 @@ export default function CEODashboard({ currentUser }) {
       {/* snapshot tiles */}
       <div className="grid gap-3 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
         {data.map(u => {
-          const STATUS_PROGRESS = { completed: 100, on_track: 85, at_risk: 50, off_track: 18, on_hold: 10, not_started: 5 }
-          const STATUS_BAR_COLOR = { completed: '#2563EB', on_track: '#34D399', at_risk: '#F59E0B', off_track: '#D62027', on_hold: '#A78BFA', not_started: '#94A3B8' }
           return (
             <div key={u.id} className="rounded-xl p-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
               <div className="font-semibold text-sm mb-2 truncate cursor-pointer" style={{ color: 'var(--text-primary)' }}
@@ -516,15 +512,16 @@ export default function CEODashboard({ currentUser }) {
                       {visibleSubs.map((sub, subIdx) => {
                         const c = sub.thisWeekCheckin
                         const weeksStale = calcWeeksNoProgress(sub, weekOptions, selectedWeek)
+                        const tint = statusTint(c?.status)
                         return (
-                          <div key={sub.id} id={`sub-${sub.id}`} className="rounded-lg p-4 flex gap-3" style={{ transition: 'box-shadow 0.3s, transform 0.3s', boxShadow: highlightedSub === sub.id ? '0 0 0 2px #2563EB, 0 0 12px rgba(37, 99, 235,0.3)' : 'none', transform: highlightedSub === sub.id ? 'scale(1.01)' : 'none', background: c?.status === 'off_track' ? 'rgba(239,68,68,0.14)' : c?.status === 'at_risk' ? 'rgba(245,158,11,0.14)' : c?.status === 'on_hold' ? 'rgba(167,139,250,0.12)' : c?.status === 'not_started' ? 'rgba(148,163,184,0.1)' : c?.status === 'completed' ? 'rgba(56,189,248,0.1)' : c?.status === 'on_track' ? 'rgba(52,211,153,0.08)' : 'var(--bg-base)', border: c?.status === 'off_track' ? '1px solid rgba(239,68,68,0.4)' : c?.status === 'at_risk' ? '1px solid rgba(245,158,11,0.4)' : c?.status === 'on_hold' ? '1px solid rgba(167,139,250,0.35)' : c?.status === 'not_started' ? '1px solid rgba(148,163,184,0.25)' : c?.status === 'completed' ? '1px solid rgba(56,189,248,0.25)' : c?.status === 'on_track' ? '1px solid rgba(52,211,153,0.25)' : '1px solid var(--border)' }}>
+                          <div key={sub.id} id={`sub-${sub.id}`} className="rounded-lg p-4 flex gap-3" style={{ transition: 'box-shadow 0.3s, transform 0.3s', boxShadow: highlightedSub === sub.id ? '0 0 0 2px #2563EB, 0 0 12px rgba(37, 99, 235,0.3)' : 'none', transform: highlightedSub === sub.id ? 'scale(1.01)' : 'none', background: tint.bg, border: `1px solid ${tint.border}` }}>
                             <div className="flex-shrink-0 mt-0.5" style={{ fontSize: 14 }}>📌</div>
                             <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4 mb-2">
                               <div
                                 onClick={() => setHistoryModal({ type: 'sub', title: sub.title, userName: u.full_name, subs: [sub] })}
                                 className="text-sm flex-1 min-w-0"
-                                style={{ color: c?.status === "off_track" ? "#F87171" : c?.status === "at_risk" ? "#F59E0B" : c?.status === "on_hold" ? "#A78BFA" : c?.status === "not_started" ? "#94A3B8" : c?.status === "completed" ? "#38BDF8" : c?.status === "on_track" ? "#34D399" : "#64748B", cursor: 'pointer' }}
+                                style={{ color: tint.text, cursor: 'pointer' }}
                                 onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
                                 onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
                               >{sub.is_implicit ? 'Weekly status' : `${toLetter(subIdx)}. ${sub.title}`}</div>
@@ -589,9 +586,13 @@ export default function CEODashboard({ currentUser }) {
       {/* History Modal */}
       {historyModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
+          ref={el => el?.focus()}
           onClick={() => setHistoryModal(null)}
           onKeyDown={e => { if (e.key === 'Escape') setHistoryModal(null) }}
-          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, outline: 'none' }}
         >
           <div
             onClick={e => e.stopPropagation()}

@@ -2,9 +2,8 @@
 import { useState, useMemo } from 'react'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { format } from 'date-fns'
+import { STATUS_HEX, STATUS_LABELS } from '../lib/utils'
 
-const STATUS_HEX = { not_started: '#94A3B8', on_track: '#34D399', at_risk: '#F59E0B', off_track: '#D62027', on_hold: '#A78BFA', completed: '#38BDF8' }
-const STATUS_LABELS = { not_started: 'Not Started', on_track: 'On Track', at_risk: 'At Risk', off_track: 'Off Track', on_hold: 'On Hold', completed: 'Completed' }
 const STATUS_NUM = { completed: 6, on_track: 5, at_risk: 4, off_track: 3, on_hold: 2, not_started: 1 }
 
 function ChartCard({ title, subtitle, children }) {
@@ -128,7 +127,7 @@ export default function AnalyticsCharts({ data, weekOptions }) {
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
             <XAxis dataKey="label" tick={{ fill: '#64748B', fontSize: 11 }} axisLine={{ stroke: 'rgba(0,0,0,0.1)' }} />
             <YAxis domain={[0, 100]} tick={{ fill: '#64748B', fontSize: 11 }} axisLine={{ stroke: 'rgba(0,0,0,0.1)' }} tickFormatter={v => `${v}%`} />
-            <Tooltip {...tooltipStyle} formatter={(v, name) => [`${v}%`, 'Submission Rate']} />
+            <Tooltip {...tooltipStyle} formatter={v => [`${v}%`, 'Submission Rate']} />
             <Line type="monotone" dataKey="rate" stroke="#2563EB" strokeWidth={2.5} dot={{ fill: '#2563EB', r: 4, strokeWidth: 0 }} activeDot={{ r: 6, fill: '#2563EB' }} />
           </LineChart>
         </ResponsiveContainer>

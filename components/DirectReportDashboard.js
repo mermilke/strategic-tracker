@@ -1,10 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import StatusBadge from './StatusBadge'
-import { getCurrentWeekStart, formatWeekLabel, STATUS_CONFIG } from '../lib/utils'
-import { startOfWeek, subWeeks, format } from 'date-fns'
+import Spinner from './Spinner'
+import { getCurrentWeekStart, formatWeekLabel, statusTint, bySortOrder } from '../lib/utils'
+import { startOfWeek, format } from 'date-fns'
 
 const toLetter = i => String.fromCharCode(65 + i)
 
@@ -19,8 +20,9 @@ export default function DirectReportDashboard({ currentUser }) {
   const thisWeek = getCurrentWeekStart()
   const [selectedWeek, setSelectedWeek] = useState(thisWeek)
 
-  // earliest week comes from this user's check-ins so the range covers all real history
-  const weekOptions = (() => {
+  // earliest week comes from this user's check-ins so the range covers all real
+  // history. Memoized so it only recomputes when the objectives change.
+  const weekOptions = useMemo(() => {
     const weeks = []
     const cur = startOfWeek(new Date(), { weekStartsOn: 1 })
 
@@ -40,7 +42,7 @@ export default function DirectReportDashboard({ currentUser }) {
       w = new Date(w.getTime() + 7 * 24 * 60 * 60 * 1000)
     }
     return weeks
-  })()
+  }, [objectives])
   const weekIdx = weekOptions.indexOf(selectedWeek)
   const goBack = () => { if (weekIdx > 0) setSelectedWeek(weekOptions[weekIdx - 1]) }
   const goForward = () => { if (weekIdx < weekOptions.length - 1) setSelectedWeek(weekOptions[weekIdx + 1]) }
@@ -64,7 +66,7 @@ export default function DirectReportDashboard({ currentUser }) {
       if (obj.sub_objectives) {
         obj.sub_objectives = obj.sub_objectives
           .filter(s => s.is_active !== false)
-          .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (a.created_at || '').localeCompare(b.created_at || ''))
+          .sort(bySortOrder)
       }
     })
 
@@ -86,11 +88,7 @@ export default function DirectReportDashboard({ currentUser }) {
   const allDone = totalSubs > 0 && submitted >= totalSubs
   const isCurrentWeek = selectedWeek === thisWeek
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="w-6 h-6 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <Spinner />
 
   return (
     <div>
@@ -188,38 +186,14 @@ export default function DirectReportDashboard({ currentUser }) {
               {(obj.sub_objectives || []).filter(s => s.is_active !== false).map((sub, subIdx) => {
                 const c = checkinMap[sub.id]
                 const status = c?.status
-
-                // tinted bg matching the CEO dashboard
-                const cardBg = status === 'off_track' ? 'rgba(239,68,68,0.14)'
-                  : status === 'at_risk' ? 'rgba(245,158,11,0.14)'
-                  : status === 'on_hold' ? 'rgba(167,139,250,0.12)'
-                  : status === 'not_started' ? 'rgba(148,163,184,0.1)'
-                  : status === 'completed' ? 'rgba(56,189,248,0.1)'
-                  : status === 'on_track' ? 'rgba(52,211,153,0.08)'
-                  : 'var(--bg-base)'
-
-                const cardBorder = status === 'off_track' ? '1px solid rgba(239,68,68,0.4)'
-                  : status === 'at_risk' ? '1px solid rgba(245,158,11,0.4)'
-                  : status === 'on_hold' ? '1px solid rgba(167,139,250,0.35)'
-                  : status === 'not_started' ? '1px solid rgba(148,163,184,0.25)'
-                  : status === 'completed' ? '1px solid rgba(56,189,248,0.25)'
-                  : status === 'on_track' ? '1px solid rgba(52,211,153,0.25)'
-                  : '1px solid var(--border)'
-
-                const titleColor = status === 'off_track' ? '#F87171'
-                  : status === 'at_risk' ? '#F59E0B'
-                  : status === 'on_hold' ? '#A78BFA'
-                  : status === 'not_started' ? '#94A3B8'
-                  : status === 'completed' ? '#38BDF8'
-                  : status === 'on_track' ? '#34D399'
-                  : '#64748B'
+                const tint = statusTint(status)
 
                 return (
-                  <div key={sub.id} className="rounded-lg p-4 flex gap-3" style={{ background: cardBg, border: cardBorder }}>
+                  <div key={sub.id} className="rounded-lg p-4 flex gap-3" style={{ background: tint.bg, border: `1px solid ${tint.border}` }}>
                     <div className="flex-shrink-0 mt-0.5" style={{ fontSize: 14 }}>📌</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-3 mb-2">
-                        <div className="text-sm flex-1 min-w-0" style={{ color: titleColor }}>
+                        <div className="text-sm flex-1 min-w-0" style={{ color: tint.text }}>
                           {toLetter(subIdx)}. {sub.title}
                         </div>
                         <StatusBadge status={status} size="sm" />
