@@ -5,7 +5,7 @@
 > faster.
 
 ## What you're building
-A private web app where a leader's direct reports submit weekly check-ins on their strategic goals. The leader gets a live dashboard showing who submitted, what's at risk, and who needs support.
+A private web app where a manager's direct reports submit weekly check-ins on their strategic goals. The manager gets a live dashboard showing who submitted, what's at risk, and who needs support.
 
 The whole stack is free:
 - **Supabase** for the database and login
@@ -112,14 +112,14 @@ open your browser to **http://localhost:3000** and your app is running.
 3. Click the `role` cell and change it from `direct_report` to `admin`
 4. Click Save
 
-Refresh your browser and you'll see the leader dashboard and Manage Team menu.
+Refresh your browser and you'll see the manager dashboard and Manage Team menu.
 
 ### Step 10: Invite your direct reports
 1. In Supabase > **Authentication** > **Users** > **Invite user**
 2. Enter their email address
 3. They'll get an email to set a password
 4. Once they sign up, go to **Table Editor** > `users`, find their row, and their role is already `direct_report`
-5. If you want someone to have CEO-view only (your boss, say), change their role to `ceo`
+5. If you want someone to have manager-view only (your boss, say), change their role to `manager`
 
 ### Step 11: Set up objectives
 1. In your app, go to **Manage Team** (top nav)
@@ -171,12 +171,12 @@ git push -u origin main
 
 **You (admin):**
 - The dashboard shows all direct reports, submission progress, and at-risk items
-- Filter by "Needs CEO Support" to pull all the action items for your boss
+- Filter by "Needs manager Support" to pull all the action items for your boss
 - Filter by "Missing" to see who hasn't submitted yet
 
-**Your CEO:**
-- Log them in with the `ceo` role
-- They get the same leader dashboard view
+**Your manager:**
+- Log them in with the `manager` role
+- They get the same manager dashboard view
 
 ---
 

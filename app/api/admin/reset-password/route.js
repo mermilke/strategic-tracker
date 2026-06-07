@@ -26,7 +26,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
     const { data: profile } = await supabaseSSR.from('users').select('role').eq('id', user.id).single()
-    if (!profile || (profile.role !== 'ceo' && profile.role !== 'admin')) {
+    if (!profile || (profile.role !== 'manager' && profile.role !== 'admin')) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 

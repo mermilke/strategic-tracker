@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 export default function Navbar({ user, profile }) {
   const router = useRouter()
   const pathname = usePathname()
-  const isCEO = profile?.role === 'ceo' || profile?.role === 'admin'
+  const isManager = profile?.role === 'manager' || profile?.role === 'admin'
 
   const [directReports, setDirectReports] = useState([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -15,7 +15,7 @@ export default function Navbar({ user, profile }) {
   const dashDropdownTimeout = useRef(null)
 
   useEffect(() => {
-    if (!isCEO) return
+    if (!isManager) return
     async function loadReports() {
       const { data } = await supabase
         .from('users')
@@ -25,7 +25,7 @@ export default function Navbar({ user, profile }) {
       setDirectReports(data || [])
     }
     loadReports()
-  }, [isCEO])
+  }, [isManager])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
@@ -88,7 +88,7 @@ export default function Navbar({ user, profile }) {
 
         {/* Nav links */}
         <div style={{ display: 'flex', gap: 4 }}>
-          {isCEO ? (
+          {isManager ? (
             <div
               style={{ position: 'relative' }}
               onMouseEnter={handleDashDropdownEnter}
@@ -142,14 +142,14 @@ export default function Navbar({ user, profile }) {
               My Dashboard
             </NavLink>
           )}
-          {!isCEO && (
+          {!isManager && (
             <NavLink href="/checkin" active={pathname === '/checkin'} router={router}>
               Weekly Check-in
             </NavLink>
           )}
 
-          {/* 1:1 Notes with hover dropdown for CEO */}
-          {isCEO ? (
+          {/* 1:1 Notes with hover dropdown for manager */}
+          {isManager ? (
             <div
               style={{ position: 'relative' }}
               onMouseEnter={handleDropdownEnter}
@@ -204,7 +204,7 @@ export default function Navbar({ user, profile }) {
             </NavLink>
           )}
 
-          {isCEO && (
+          {isManager && (
             <NavLink href="/admin" active={pathname === '/admin'} router={router}>
               Manage Team
             </NavLink>
@@ -216,14 +216,14 @@ export default function Navbar({ user, profile }) {
         <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           {profile?.full_name || user?.email}
         </span>
-        {isCEO && (
+        {isManager && (
           <span style={{
             fontSize: 10, padding: '3px 8px', borderRadius: 4, fontWeight: 700,
             letterSpacing: '0.1em', textTransform: 'uppercase',
             background: 'rgba(37, 99, 235,0.1)', color: '#2563EB',
             border: '1px solid rgba(37, 99, 235,0.2)',
           }}>
-            {profile?.role === 'admin' ? 'Admin' : 'CEO'}
+            {profile?.role === 'admin' ? 'Admin' : 'Manager'}
           </span>
         )}
         <button onClick={handleSignOut} style={{

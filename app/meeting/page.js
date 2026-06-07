@@ -15,7 +15,7 @@ function MeetingContent() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // direct reports (CEO only)
+  // direct reports (manager only)
   const [directReports, setDirectReports] = useState([])
   const [selectedUserId, setSelectedUserId] = useState(initialUserId || '')
   const [selectedUserName, setSelectedUserName] = useState('')
@@ -91,9 +91,9 @@ function MeetingContent() {
 
       setProfile(prof)
 
-      const isCEO = prof?.role === 'ceo' || prof?.role === 'admin'
+      const isManager = prof?.role === 'manager' || prof?.role === 'admin'
 
-      if (isCEO) {
+      if (isManager) {
         const { data: reports } = await supabase
           .from('users')
           .select('id, full_name, email')
@@ -193,11 +193,11 @@ function MeetingContent() {
     loadSmartsheet()
   }, [selectedUserId, selectedWeek, directReports])
 
-  // CEO calendar events
+  // manager calendar events
   useEffect(() => {
     if (!user || !profile) return
-    const isCEOUser = profile.role === 'ceo' || profile.role === 'admin'
-    if (!isCEOUser) { setCalendarConnected(false); return }
+    const isManagerUser = profile.role === 'manager' || profile.role === 'admin'
+    if (!isManagerUser) { setCalendarConnected(false); return }
 
     async function loadCalendar() {
       try {
@@ -363,7 +363,7 @@ function MeetingContent() {
     }
   }
 
-  const isCEO = profile?.role === 'ceo' || profile?.role === 'admin'
+  const isManager = profile?.role === 'manager' || profile?.role === 'admin'
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
@@ -389,8 +389,8 @@ function MeetingContent() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* user picker, CEO only */}
-            {isCEO && (
+            {/* user picker, manager only */}
+            {isManager && (
               <div className="relative">
                 <select
                   value={selectedUserId}
@@ -450,8 +450,8 @@ function MeetingContent() {
           </div>
         </div>
 
-        {/* calendar bar, CEO only */}
-        {isCEO && calendarConnected === false && (
+        {/* calendar bar, manager only */}
+        {isManager && calendarConnected === false && (
           <div className="rounded-xl px-5 py-3 mb-4 flex items-center justify-between" style={{
             background: 'var(--bg-card)', border: '1px solid var(--border)',
           }}>
@@ -470,7 +470,7 @@ function MeetingContent() {
         )}
 
         {/* next 1:1 indicator */}
-        {isCEO && calendarConnected && nextMeeting && (
+        {isManager && calendarConnected && nextMeeting && (
           <div className="rounded-xl px-5 py-3 mb-4 flex items-center gap-3" style={{
             background: 'var(--bg-card)', border: '1px solid var(--border)',
           }}>
@@ -856,7 +856,7 @@ function MeetingContent() {
               <textarea
                 value={notes}
                 onChange={handleNotesChange}
-                placeholder={`Type your 1:1 meeting notes here...\n\nBoth you and ${isCEO ? (selectedUserName?.split(' ')[0] || 'your team member') : 'your manager'} can edit this in real time.`}
+                placeholder={`Type your 1:1 meeting notes here...\n\nBoth you and ${isManager ? (selectedUserName?.split(' ')[0] || 'your team member') : 'your manager'} can edit this in real time.`}
                 className="flex-1 w-full p-5 resize-none text-sm"
                 style={{
                   background: 'transparent',

@@ -24,7 +24,7 @@ SELECT
   jsonb_build_object('full_name', d.full_name, 'role', d.role),
   '', '', '', ''
 FROM (VALUES
-  ('jordan.hayes@example.com',   'Jordan Hayes',   'ceo'),
+  ('jordan.hayes@example.com',   'Jordan Hayes',   'manager'),
   ('morgan.reed@example.com',    'Morgan Reed',    'admin'),
   ('dana.whitfield@example.com', 'Dana Whitfield', 'direct_report'),
   ('priya.nair@example.com',     'Priya Nair',     'direct_report'),
@@ -86,7 +86,7 @@ END $$;
 
 DO $$
 DECLARE
-  ceo uuid; u uuid; o uuid; s uuid;
+  manager uuid; u uuid; o uuid; s uuid;
   wk0 date := date_trunc('week', now())::date;
   wk1 date := wk0 - 7;
 BEGIN
@@ -95,7 +95,7 @@ BEGIN
     RETURN;
   END IF;
 
-  SELECT id INTO ceo FROM users WHERE email = 'jordan.hayes@example.com';
+  SELECT id INTO manager FROM users WHERE email = 'jordan.hayes@example.com';
   DELETE FROM meeting_notes WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%@example.com');
   DELETE FROM strategic_objectives WHERE owner_id IN (SELECT id FROM users WHERE email LIKE '%@example.com');
 
@@ -218,10 +218,10 @@ BEGIN
   PERFORM _seed_sub(o, u, 'Fix the top ten friction points', 'Top friction', 1, ARRAY['on_track','on_track'], 'Six of ten fixed.');
 
   INSERT INTO meeting_notes (user_id, week_start, notes, updated_by) VALUES
-    ((SELECT id FROM users WHERE email = 'dana.whitfield@example.com'), wk0, E'- EUR billing: pick the vendor by Friday.\n- Wizard demo looked good, ship to beta next week.', ceo),
-    ((SELECT id FROM users WHERE email = 'priya.nair@example.com'), wk0, E'- Latency goal hit early, nice work.\n- Timebox the cache work.', ceo),
-    ((SELECT id FROM users WHERE email = 'mateo.alvarez@example.com'), wk0, E'- 4 of 6 pilots signed.\n- I will ping legal about the reseller agreement.', ceo),
-    ((SELECT id FROM users WHERE email = 'sofia.costa@example.com'), wk1, E'- Site replatform still behind; new vendor needs to commit to dates.', ceo);
+    ((SELECT id FROM users WHERE email = 'dana.whitfield@example.com'), wk0, E'- EUR billing: pick the vendor by Friday.\n- Wizard demo looked good, ship to beta next week.', manager),
+    ((SELECT id FROM users WHERE email = 'priya.nair@example.com'), wk0, E'- Latency goal hit early, nice work.\n- Timebox the cache work.', manager),
+    ((SELECT id FROM users WHERE email = 'mateo.alvarez@example.com'), wk0, E'- 4 of 6 pilots signed.\n- I will ping legal about the reseller agreement.', manager),
+    ((SELECT id FROM users WHERE email = 'sofia.costa@example.com'), wk1, E'- Site replatform still behind; new vendor needs to commit to dates.', manager);
 END $$;
 
 DROP FUNCTION IF EXISTS _seed_sub(uuid, uuid, text, text, int, text[], text, text, boolean, int);

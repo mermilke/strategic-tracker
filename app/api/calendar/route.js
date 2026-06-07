@@ -4,9 +4,9 @@ import { getAuthenticatedUser } from '../../../lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-// The shared mailbox whose calendar the app reads (the leader running the 1:1s).
+// The shared mailbox whose calendar the app reads (the manager running the 1:1s).
 // Anyone whose stored Microsoft token has Calendars.Read.Shared on it can read it.
-const CALENDAR_MAILBOX = process.env.CEO_CALENDAR_EMAIL
+const CALENDAR_MAILBOX = process.env.MANAGER_CALENDAR_EMAIL
 
 async function refreshAccessToken(supabaseAdmin, userId, refreshToken) {
   const tokenRes = await fetch(

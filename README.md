@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml)
 
-**▶ [Live demo](https://strategic-tracker-mu.vercel.app)** -- one click signs you in as a CEO or a team member, with a fictional team's data to explore.
+**▶ [Live demo](https://strategic-tracker-mu.vercel.app)** -- one click signs you in as a manager or a team member, with a fictional team's data to explore.
 
-A small web app for keeping a leadership team aligned week to week. Each direct
+A small web app for keeping a management team aligned week to week. Each direct
 report logs a quick weekly check-in against their strategic objectives, and the
-leader gets a live dashboard showing what's on track, what's at risk, who needs
+manager gets a live dashboard showing what's on track, what's at risk, who needs
 help, and what to bring up in the next 1:1. There's also an AI-written Monday
 briefing that sums up the week.
 
@@ -17,9 +17,9 @@ It's source-available, not open source. See [License](#license).
 
 ## Screenshots
 
-The leader's team overview, with every report's objectives at a glance:
+The manager's team overview, with every report's objectives at a glance:
 
-![Leader dashboard](docs/screenshots/dashboard.png)
+![Manager dashboard](docs/screenshots/dashboard.png)
 
 | Weekly check-in | A direct report's dashboard |
 | --- | --- |
@@ -39,7 +39,7 @@ For direct reports:
   started, completed), whether any progress was made, a "needs support" flag, a
   "discuss in the 1:1" flag, and free-text comments.
 
-For the leader or an admin:
+For the manager or an admin:
 
 - A team overview with one tile per person, showing every objective and
   sub-objective at a glance and color-coded by status. Anything that hasn't
@@ -128,7 +128,7 @@ GitHub Actions (cron) -- fires at 4pm per timezone --> /api/cron/reminders
 app/
   page.js                 Entry point; routes to login or dashboard
   login/  reset-password/ Supabase email/password and magic-link auth
-  dashboard/              Renders the CEO or direct-report view by role
+  dashboard/              Renders the manager or direct-report view by role
   checkin/                The weekly check-in form
   meeting/                1:1 notes, attachments, next-meeting lookup
   admin/                  Manage people and objectives
@@ -149,7 +149,7 @@ seed.sql                  Fictional demo team (optional)
 
 Access control lives in Postgres. Every table has row-level security, so a
 direct report can only read and write their own objectives and check-ins, while
-the leader and admins see everyone. The server-only routes (briefing, cron,
+the manager and admins see everyone. The server-only routes (briefing, cron,
 admin password reset) use the service-role key and never run in the browser.
 
 For the deeper version, including the AI briefing pipeline and the
@@ -172,7 +172,7 @@ You'll need Node.js 20+ and a free [Supabase](https://supabase.com) project.
    to create the schema.
 
 4. Optionally run [`seed.sql`](seed.sql) to load a fictional team to click
-   around. Sign in with any of the seeded addresses (for example the CEO,
+   around. Sign in with any of the seeded addresses (for example the manager,
    `jordan.hayes@example.com`) using the password `demo1234`.
 
 5. Start it:
@@ -182,7 +182,7 @@ You'll need Node.js 20+ and a free [Supabase](https://supabase.com) project.
    The app runs at http://localhost:3000.
 
 If you skip the seed, sign up through the app and then change your row's `role`
-to `admin` in the Supabase `users` table to get the leader views.
+to `admin` in the Supabase `users` table to get the manager views.
 
 ## Tests
 
@@ -210,7 +210,7 @@ deployed base URL) and a `CRON_SECRET` Actions secret that matches the
 - The **AI briefing** needs `AI_GATEWAY_API_KEY`. Leave it out and everything
   else still works; the briefing card just stays dormant.
 - The **calendar** needs an Azure AD app with delegated `Calendars.Read.Shared`
-  and `CEO_CALENDAR_EMAIL` set to the shared mailbox. It drives the "next 1:1"
+  and `MANAGER_CALENDAR_EMAIL` set to the shared mailbox. It drives the "next 1:1"
   lookup and the reminder timing.
 - **Reminder email** needs a Resend API key and a verified sender address.
 - **Smartsheet** stays off unless `NEXT_PUBLIC_SMARTSHEET_USER_EMAIL` is set.
@@ -219,7 +219,7 @@ deployed base URL) and a `CRON_SECRET` Actions secret that matches the
 
 Things I'd build next, roughly in order of value:
 
-- **Comment loop** so the leader can leave a question on a specific at-risk item
+- **Comment loop** so the manager can leave a question on a specific at-risk item
   and the report sees it on their next check-in. Right now that conversation only
   happens in the free-form 1:1 notes.
 - **Email or PDF of the weekly briefing**, so it can go out Monday morning

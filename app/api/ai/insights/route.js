@@ -11,9 +11,9 @@ import { buildBriefingContext } from '../../../../lib/briefing-context'
 //   GET https://ai-gateway.vercel.sh/v1/models
 const MODEL = 'anthropic/claude-sonnet-4.6'
 
-// Leader the briefing is written for, plus the clock it's written in. Both
+// Manager the briefing is written for, plus the clock it's written in. Both
 // configurable so the app isn't tied to one organization.
-const CEO_NAME = process.env.CEO_NAME || 'the CEO'
+const MANAGER_NAME = process.env.MANAGER_NAME || 'the manager'
 const APP_TIMEZONE = process.env.APP_TIMEZONE || 'UTC'
 
 // Sonnet 4.x family pricing (USD per million tokens), rough cost estimate.
@@ -39,11 +39,11 @@ function calcCostCents({ input_tokens = 0, output_tokens = 0, cache_read = 0, ca
 // come back as a one-sentence briefing.
 const BriefingSchema = z.object({
   headline: z.string().describe(
-    'One sentence summarizing the week for the CEO. Punchy, factual, no hedging. ' +
+    'One sentence summarizing the week for the manager. Punchy, factual, no hedging. ' +
     'If the week was flat, say so plainly.'
   ),
   top_items: z.array(z.string()).max(3).describe(
-    '0-3 most important things the CEO needs to know. ' +
+    '0-3 most important things the manager needs to know. ' +
     'Skip if nothing material happened -- empty array is fine. ' +
     'No need to invent a third just because the field allows 3.'
   ),
@@ -62,17 +62,17 @@ const BriefingSchema = z.object({
       'e.g. "Mon May 26, 10:00 AM UTC" or null if no 1:1 in next 14 days.'
     ),
     points: z.array(z.string()).describe(
-      'Direct questions/items for the leader to raise. Be specific. Skip DRs with nothing worth discussing.'
+      'Direct questions/items for the manager to raise. Be specific. Skip DRs with nothing worth discussing.'
     ),
   })).describe('Only DRs with material to discuss. Skip DRs whose week was uneventful.'),
   data_caveats: z.array(z.string()).describe(
-    'Honest call-outs only when material to the CEO -- e.g. "no upcoming 1:1 found with a direct report". ' +
+    'Honest call-outs only when material to the manager -- e.g. "no upcoming 1:1 found with a direct report". ' +
     'Skip operational noise (reminders, narrative length, etc.). Empty if nothing worth flagging.'
   ),
 })
 
 // voice + section rules, cached as a stable system block
-const SYSTEM_PROMPT = `You are ${CEO_NAME}'s chief of staff. You are writing a Monday-morning briefing in under 4 minutes of reading time.
+const SYSTEM_PROMPT = `You are ${MANAGER_NAME}'s chief of staff. You are writing a Monday-morning briefing in under 4 minutes of reading time.
 
 VOICE:
 - Direct, factual, prioritized.
@@ -85,11 +85,11 @@ LANGUAGE -- STATUS VALUES:
 
 SECTIONS (you fill these via the structured schema):
 - headline: one sentence summarizing the week.
-- top_items: the 1-3 most important things the CEO needs to know. Empty if none.
+- top_items: the 1-3 most important things the manager needs to know. Empty if none.
 - risks: real risks/blockers with severity. Empty if none.
 - momentum: genuine wins only -- status flips (e.g. at-risk to on-track), sub-objective completions, new opportunities logged. NOT "submitted on time" or "consistency". Empty if a hold-the-line week.
 - talking_points: per-DR prep for upcoming 1:1s. Only include DRs with something specific worth raising. Use the upcoming_meeting_label from the calendar data if present.
-- data_caveats: only flag things material to the CEO (e.g. "no upcoming 1:1 found with a direct report"). Skip operational noise.
+- data_caveats: only flag things material to the manager (e.g. "no upcoming 1:1 found with a direct report"). Skip operational noise.
 
 RULES:
 - Assume DRs will NEVER write narrative in their check-ins. Status fields are the signal. Do not complain that progress_this_week is empty or "Yes" -- that is the norm.
@@ -98,7 +98,7 @@ RULES:
 - A sub-objective that has been "not started" or "on hold" for multiple consecutive weeks is a genuine risk.
 - A sub-objective that flipped status this week is genuine momentum.
 - CHECK-IN TIMING (very important -- read carefully):
-  - Each DR is expected to submit their check-in by the day of their 1:1 with the leader.
+  - Each DR is expected to submit their check-in by the day of their 1:1 with the manager.
   - Inspect today_date and the DR's meetings_next_14d list (which now includes CANCELLED meetings, flagged with is_cancelled: true).
   - If the DR's next confirmed 1:1 is today or in the future, the check-in is NOT yet due. Frame as "check-in not yet due, 1:1 is Thursday". DO NOT say "missed".
   - If the DR's most recent scheduled 1:1 this week was CANCELLED and no replacement is on the calendar yet, frame as "1:1 cancelled; check-in not late, awaiting reschedule". DO NOT say "missed".
@@ -112,7 +112,7 @@ function userPromptFromContext(ctx) {
   const today = new Date().toISOString().slice(0, 10)
   const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long', timeZone: APP_TIMEZONE })
   return [
-    `Today: ${today} (${dayName}, the leader's local time).`,
+    `Today: ${today} (${dayName}, the manager's local time).`,
     `Briefing week: Mon ${ctx.week_start} to Sun (compare against previous week: ${ctx.previous_week_start}).`,
     `Calendar fetch status: ${ctx.calendar_status}.`,
     '',
@@ -131,7 +131,7 @@ function newAdmin() {
 }
 
 // Cache reads run under the caller's session, so row-level security applies and
-// a stored briefing is viewable by any CEO/admin without the service-role key.
+// a stored briefing is viewable by any manager/admin without the service-role key.
 async function sessionClient() {
   const cookieStore = await cookies()
   return createServerClient(
@@ -154,8 +154,8 @@ async function gateRequest(request) {
   const auth = await getAuthenticatedUser()
   if (!auth) return { error: 'Unauthorized', status: 401 }
   const role = auth.profile?.role
-  if (role !== 'ceo' && role !== 'admin') {
-    return { error: 'Forbidden -- CEO/admin only', status: 403 }
+  if (role !== 'manager' && role !== 'admin') {
+    return { error: 'Forbidden -- manager/admin only', status: 403 }
   }
   return { auth }
 }

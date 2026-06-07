@@ -182,7 +182,7 @@ export default function LoginPage() {
                     <button type="button" onClick={() => quickLogin('jordan.hayes@example.com')} disabled={loading}
                       style={{ flex: 1, padding: '10px 0', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none',
                         cursor: loading ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #2563EB, #1D4ED8)', color: 'white' }}>
-                      Enter as CEO
+                      Enter as a manager
                     </button>
                     <button type="button" onClick={() => quickLogin('dana.whitfield@example.com')} disabled={loading}
                       style={{ flex: 1, padding: '10px 0', borderRadius: 8, fontSize: 13, fontWeight: 600,

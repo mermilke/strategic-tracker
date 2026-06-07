@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../../components/Navbar'
-import LeaderDashboard from '../../components/LeaderDashboard'
+import ManagerDashboard from '../../components/ManagerDashboard'
 import DirectReportDashboard from '../../components/DirectReportDashboard'
 
 function DashboardContent() {
@@ -32,7 +32,7 @@ function DashboardContent() {
       setProfile(prof)
 
       // admin impersonating someone, grab their profile too
-      if (viewAsId && (prof?.role === 'ceo' || prof?.role === 'admin')) {
+      if (viewAsId && (prof?.role === 'manager' || prof?.role === 'admin')) {
         const { data: targetProf } = await supabase
           .from('users')
           .select('*')
@@ -52,8 +52,8 @@ function DashboardContent() {
     </div>
   )
 
-  const isCEO = profile?.role === 'ceo' || profile?.role === 'admin'
-  const isViewingAs = isCEO && viewAsProfile
+  const isManager = profile?.role === 'manager' || profile?.role === 'admin'
+  const isViewingAs = isManager && viewAsProfile
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
@@ -91,8 +91,8 @@ function DashboardContent() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         {isViewingAs
           ? <DirectReportDashboard currentUser={viewAsProfile} />
-          : isCEO
-            ? <LeaderDashboard currentUser={profile} />
+          : isManager
+            ? <ManagerDashboard currentUser={profile} />
             : <DirectReportDashboard currentUser={profile} />
         }
       </main>

@@ -19,7 +19,7 @@ enforcement boundary, not the UI.
 
 Six core tables, all keyed off Supabase auth:
 
-- `users` -- profile + role (`ceo`, `admin`, `direct_report`) + timezone, one row
+- `users` -- profile + role (`manager`, `admin`, `direct_report`) + timezone, one row
   per auth user, created by a trigger on signup.
 - `strategic_objectives` and `sub_objectives` -- the goal tree. An objective can
   carry an `opportunity_target` to become a count-based goal (e.g. "close 5
@@ -36,7 +36,7 @@ comparison instead of date-range math in most places.
 
 Every table has row-level security, and the policies are the security model, not
 the UI. A direct report can only `SELECT`/`INSERT`/`UPDATE` their own objectives
-and check-ins; a `ceo` or `admin` can see everyone. The browser uses the public
+and check-ins; a `manager` or `admin` can see everyone. The browser uses the public
 anon key, so even though the client talks to Postgres directly, RLS decides what
 it's allowed to touch.
 
@@ -77,7 +77,7 @@ calling out, mostly for the timezone handling.
   *their* clock, so the GitHub Actions cron pings the endpoint at several UTC
   times (one per timezone/DST combination) and the endpoint only acts for reports
   whose local hour is currently 16.
-- It reads the leader's calendar (Microsoft Graph) and decides what kind of nudge
+- It reads the manager's calendar (Microsoft Graph) and decides what kind of nudge
   fits: a day-before reminder, an "overdue" note if the 1:1 already happened with
   no check-in, or a "your 1:1 was cancelled, here's what to do" message. It will
   not call a check-in "missed" if the meeting hasn't happened yet or was

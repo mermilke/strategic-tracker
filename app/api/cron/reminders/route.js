@@ -10,22 +10,22 @@ export const maxDuration = 30
 // hasn't had one set yet.
 const DEFAULT_TIMEZONE = process.env.APP_TIMEZONE || 'UTC'
 
-// Leader running the 1:1s and the mailbox whose calendar we read. Both come
+// Manager running the 1:1s and the mailbox whose calendar we read. Both come
 // from env so the app isn't tied to one organization.
-const CEO_NAME = process.env.CEO_NAME || 'the CEO'
-const CEO_FIRST = CEO_NAME.split(' ')[0].toLowerCase()
-const CALENDAR_MAILBOX = process.env.CEO_CALENDAR_EMAIL
+const MANAGER_NAME = process.env.MANAGER_NAME || 'the manager'
+const MANAGER_FIRST = MANAGER_NAME.split(' ')[0].toLowerCase()
+const CALENDAR_MAILBOX = process.env.MANAGER_CALENDAR_EMAIL
 
 // Candidate calendar-subject patterns for a DR's 1:1, built from their first
-// name and the leader's. Covers the common ways people title recurring 1:1s
+// name and the manager's. Covers the common ways people title recurring 1:1s
 // ("Dana 121", "Sam - Dana", "Dana / Sam"). Calendars that don't follow any of
 // these still match on a bare first-name check in isOneOnOneFor().
 function meetingPatternsFor(firstName) {
   const dr = firstName.toLowerCase()
   return [
     `${dr} 121`, `${dr} 1:1`, `${dr} 1-1`,
-    `${CEO_FIRST} - ${dr}`, `${dr} - ${CEO_FIRST}`,
-    `${CEO_FIRST} / ${dr}`, `${dr} / ${CEO_FIRST}`,
+    `${MANAGER_FIRST} - ${dr}`, `${dr} - ${MANAGER_FIRST}`,
+    `${MANAGER_FIRST} / ${dr}`, `${dr} / ${MANAGER_FIRST}`,
   ]
 }
 
@@ -73,7 +73,7 @@ async function getAccessToken(supabaseAdmin) {
   const { data: users } = await supabaseAdmin
     .from('users')
     .select('id')
-    .in('role', ['ceo', 'admin'])
+    .in('role', ['manager', 'admin'])
 
   if (!users?.length) return null
 
@@ -201,7 +201,7 @@ function buildReminderEmail(firstName, meetingSubject, meetingDate, meetingTime,
       </div>
       <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px; color: #1a1a2e;">Hi ${firstName},</h1>
       <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 16px;">
-        This is a friendly reminder that your <strong>1:1 meeting with ${CEO_NAME}</strong> is tomorrow and your weekly check-in has not been completed yet.
+        This is a friendly reminder that your <strong>1:1 meeting with ${MANAGER_NAME}</strong> is tomorrow and your weekly check-in has not been completed yet.
       </p>
       <div style="background: #f0fafb; border: 2px solid #2563EB; border-radius: 12px; padding: 24px; margin: 24px 0;">
         <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: #2563EB; font-weight: 700; margin-bottom: 10px;">
@@ -215,7 +215,7 @@ function buildReminderEmail(firstName, meetingSubject, meetingDate, meetingTime,
         </div>
       </div>
       <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 24px;">
-        Please take a few minutes to update your objectives and status before the meeting so ${CEO_NAME} can review them ahead of time.
+        Please take a few minutes to update your objectives and status before the meeting so ${MANAGER_NAME} can review them ahead of time.
       </p>
       <div style="text-align: center; margin: 32px 0;">
         <!--[if mso]>
@@ -255,7 +255,7 @@ function buildOverdueEmail(firstName, meetingSubject, meetingDate, meetingTime, 
       </div>
       <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px; color: #1a1a2e;">Hi ${firstName},</h1>
       <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 16px;">
-        Your weekly check-in is <strong>overdue</strong>. Your <strong>1:1 meeting with ${CEO_NAME}</strong> this week was on <strong>${dateLine}</strong>, and your check-in still hasn't been submitted.
+        Your weekly check-in is <strong>overdue</strong>. Your <strong>1:1 meeting with ${MANAGER_NAME}</strong> this week was on <strong>${dateLine}</strong>, and your check-in still hasn't been submitted.
       </p>
       <div style="background: #FEF2F2; border: 2px solid #D62027; border-radius: 12px; padding: 24px; margin: 24px 0;">
         <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: #D62027; font-weight: 700; margin-bottom: 10px;">
@@ -269,7 +269,7 @@ function buildOverdueEmail(firstName, meetingSubject, meetingDate, meetingTime, 
         </div>
       </div>
       <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 24px;">
-        Please take a few minutes to update your objectives and status now so ${CEO_NAME} can review your progress.
+        Please take a few minutes to update your objectives and status now so ${MANAGER_NAME} can review your progress.
       </p>
       <div style="text-align: center; margin: 32px 0;">
         <!--[if mso]>
@@ -308,7 +308,7 @@ function buildCancelledEmail(firstName, siteUrl) {
       </div>
       <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px; color: #1a1a2e;">Hi ${firstName},</h1>
       <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 16px;">
-        It looks like your <strong>1:1 meeting with ${CEO_NAME}</strong> may have been cancelled or moved this week. However, your weekly check-in has not been completed yet.
+        It looks like your <strong>1:1 meeting with ${MANAGER_NAME}</strong> may have been cancelled or moved this week. However, your weekly check-in has not been completed yet.
       </p>
       <div style="background: #FFF7ED; border: 2px solid #F59E0B; border-radius: 12px; padding: 24px; margin: 24px 0;">
         <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: #F59E0B; font-weight: 700; margin-bottom: 10px;">
@@ -319,7 +319,7 @@ function buildCancelledEmail(firstName, siteUrl) {
         </div>
       </div>
       <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 24px;">
-        Even though the meeting may not take place, ${CEO_NAME} may reach out separately to coordinate a touch-base or quick call. In the meantime, please update your objectives and status so they stay informed when they review the tracker.
+        Even though the meeting may not take place, ${MANAGER_NAME} may reach out separately to coordinate a touch-base or quick call. In the meantime, please update your objectives and status so they stay informed when they review the tracker.
       </p>
       <div style="text-align: center; margin: 32px 0;">
         <!--[if mso]>
@@ -449,7 +449,7 @@ export async function GET(request) {
         continue
       }
 
-      // Pull the leader's calendar across last/this/next week to handle cross-week
+      // Pull the manager's calendar across last/this/next week to handle cross-week
       // cases: a Friday reminder for Monday's meeting, or an overdue that carries
       // over until next week's day-before.
       const todayDate = getTodayDateInTimezone(tz)
@@ -616,14 +616,14 @@ export async function GET(request) {
       const safeName = escapeHtml(firstName)
       const safeSubject = escapeHtml(targetMeeting.subject || '')
       if (emailType === 'reminder') {
-        emailSubject = `Reminder: Please complete your check-in before your 1:1 with ${CEO_NAME}`
+        emailSubject = `Reminder: Please complete your check-in before your 1:1 with ${MANAGER_NAME}`
         emailHtml = buildReminderEmail(safeName, safeSubject, dateStr, timeStr, siteUrl)
       } else if (emailType === 'overdue') {
-        emailSubject = `Overdue: Your check-in for this week's 1:1 with ${CEO_NAME}`
+        emailSubject = `Overdue: Your check-in for this week's 1:1 with ${MANAGER_NAME}`
         emailHtml = buildOverdueEmail(safeName, safeSubject, dateStr, timeStr, siteUrl)
       } else {
         // cancelled / moved meeting, ask them to fill it out anyway
-        emailSubject = `Reminder: Please update your check-in for ${CEO_NAME} this week`
+        emailSubject = `Reminder: Please update your check-in for ${MANAGER_NAME} this week`
         emailHtml = buildCancelledEmail(safeName, siteUrl)
       }
 

@@ -62,8 +62,8 @@ function CheckinForm() {
       const { data: prof } = await supabase.from('users').select('*').eq('id', session.user.id).single()
       setProfile(prof)
 
-      // admin/CEO can view a DR's check-in read-only via ?viewAs=<userId>
-      const isAdmin = prof?.role === 'ceo' || prof?.role === 'admin'
+      // admin/manager can view a DR's check-in read-only via ?viewAs=<userId>
+      const isAdmin = prof?.role === 'manager' || prof?.role === 'admin'
       let targetId = session.user.id
       if (viewAsId && isAdmin && viewAsId !== session.user.id) {
         const { data: targetProf } = await supabase.from('users').select('*').eq('id', viewAsId).single()

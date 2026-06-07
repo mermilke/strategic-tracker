@@ -38,7 +38,7 @@ function calcWeeksNoProgress(sub, weekOptions, selectedWeek) {
 const STATUS_PROGRESS = { completed: 100, on_track: 85, at_risk: 50, off_track: 18, on_hold: 10, not_started: 5 }
 const STATUS_BAR_COLOR = { completed: '#2563EB', on_track: '#34D399', at_risk: '#F59E0B', off_track: '#D62027', on_hold: '#A78BFA', not_started: '#94A3B8' }
 
-export default function LeaderDashboard({ currentUser }) {
+export default function ManagerDashboard({ currentUser }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeView = searchParams.get('view') || 'overview'
@@ -261,7 +261,7 @@ export default function LeaderDashboard({ currentUser }) {
                                   <polyline points="20 6 9 17 4 12"/>
                                 </svg>
                               </span>
-                              <span title={c?.support_needed ? 'Support needed from CEO' : 'No support needed'} style={{ display: 'inline-flex' }}>
+                              <span title={c?.support_needed ? 'Support needed from manager' : 'No support needed'} style={{ display: 'inline-flex' }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill={c?.support_needed ? '#2563EB' : '#CBD5E1'} stroke="none" style={{ marginTop: 1 }}>
                                   <path d="M12 2a6 6 0 00-6 6c0 3-1.5 5.5-3 7h18c-1.5-1.5-3-4-3-7a6 6 0 00-6-6z"/>
                                   <path d="M2 15.5h20v1.5H2z"/>
@@ -359,7 +359,7 @@ export default function LeaderDashboard({ currentUser }) {
       <div className="grid grid-cols-4 gap-4 mb-8">
         {[
           { label: 'At Risk Items', value: totalAtRisk, color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
-          { label: 'Needs CEO Support', value: totalNeedsSupport, color: '#38BDF8', bg: 'rgba(56,189,248,0.08)' },
+          { label: 'Needs Manager Support', value: totalNeedsSupport, color: '#38BDF8', bg: 'rgba(56,189,248,0.08)' },
           { label: 'Missing Submissions', value: totalNotSubmitted, color: '#F87171', bg: 'rgba(248,113,113,0.08)' },
           { label: 'No Update (2+ weeks)', value: data.flatMap(u => (u.objectives || []).flatMap(o => o.sub_objectives)).filter(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek) >= 2).length, color: '#D62027', bg: 'rgba(214,32,39,0.08)' },
         ].map(card => (
