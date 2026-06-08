@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig, configDefaults } from 'vitest/config'
 
 // This project keeps JSX in .js files (Next.js style). Vite's oxc transformer parses
 // JSX by file extension and skips .js by default, so point it at .js too. The codebase
@@ -15,5 +15,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.js'],
+    // Integration tests need a live Supabase stack; they run via their own config
+    // (npm run test:integration), not the default fast suite.
+    exclude: [...configDefaults.exclude, 'tests/integration/**'],
   },
 })
