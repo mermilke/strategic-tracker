@@ -15,6 +15,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run typecheck
       - run: npm test
       # Build needs the public Supabase vars present (not real) so pages can
       # prerender. Real keys are only needed at runtime.
