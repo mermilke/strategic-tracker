@@ -2,7 +2,10 @@
 import { useState } from 'react'
 
 // Collapsible list of archived sub-objectives under an active objective, each with a Restore action.
-export default function ArchivedSubsToggle({ subs, restoreSub }) {
+export default function ArchivedSubsToggle({ subs, restoreSub }: {
+  subs: { id: string; title: string }[]
+  restoreSub: (id: string) => void | Promise<void>
+}) {
   const [show, setShow] = useState(false)
   return (
     <div className="pt-1">

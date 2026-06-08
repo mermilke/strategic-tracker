@@ -1,19 +1,33 @@
 'use client'
 import { useRef } from 'react'
+import type { DragEvent } from 'react'
 import DragGrip from './DragGrip'
 import { toLetter, fmtDate } from '../../lib/utils'
+
+type SubRow = {
+  id: string
+  title: string
+  short_title?: string | null
+  created_at?: string | null
+  sort_order?: number | null
+}
 
 // Read-only, drag-reorderable list of sub-objective rows. Sub-objectives are edited
 // through the parent objective's Edit mode, so there are no per-row controls here.
 // `reorder(objId, subId, newIndex, oldIndex)` persists a move. `showMeta` adds the
 // short_title and created-date annotations used for real (non-pending) sub-objectives.
-export default function DraggableSubList({ subs, objId, reorder, showMeta = false }) {
-  const dragItem = useRef(null)
-  const dragOverItem = useRef(null)
+export default function DraggableSubList({ subs, objId, reorder, showMeta = false }: {
+  subs: SubRow[]
+  objId: string
+  reorder: (objId: string, subId: string, newIndex: number, oldIndex: number) => void | Promise<void>
+  showMeta?: boolean
+}) {
+  const dragItem = useRef<number | null>(null)
+  const dragOverItem = useRef<number | null>(null)
 
-  function handleDragStart(e, index) { e.stopPropagation(); dragItem.current = index }
-  function handleDragEnter(index) { dragOverItem.current = index }
-  async function handleDragEnd(e, subId) {
+  function handleDragStart(e: DragEvent, index: number) { e.stopPropagation(); dragItem.current = index }
+  function handleDragEnter(index: number) { dragOverItem.current = index }
+  async function handleDragEnd(e: DragEvent, subId: string) {
     e.stopPropagation()
     if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return
     await reorder(objId, subId, dragOverItem.current, dragItem.current)

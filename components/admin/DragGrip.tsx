@@ -4,7 +4,7 @@ const VARIANTS = {
   sub: { gap: 2.5, padding: '2px 4px', opacity: 0.35, width: 12 },
 }
 
-export default function DragGrip({ variant = 'obj' }) {
+export default function DragGrip({ variant = 'obj' }: { variant?: 'obj' | 'sub' }) {
   const v = VARIANTS[variant] || VARIANTS.obj
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: v.gap, padding: v.padding, cursor: 'grab', opacity: v.opacity, flexShrink: 0 }}>

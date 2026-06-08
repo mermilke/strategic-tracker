@@ -7,32 +7,49 @@ import DraggableSubList from './DraggableSubList'
 import DragGrip from './DragGrip'
 import { toLetter, fmtDate } from '../../lib/utils'
 
+type PendingSub = { id: string; title: string; sort_order?: number | null }
+type PendingObj = {
+  id: string
+  title: string
+  target_date?: string | null
+  pending_sub_objectives?: PendingSub[] | null
+}
+
 // Drag-reorderable list of objectives staged for a person who has not signed up yet.
 // Mirrors DraggableObjList but against the pending_* tables, with no archive concept
 // and a simpler edit mode (objective title plus sub-objective titles).
-export default function DraggablePendingObjList({ objs, email, deletePendingObj, deletePendingSub, addSubToPendingObj, reorderPendingObj, reorderPendingSub, onSave }) {
-  const dragItem = useRef(null)
-  const dragOverItem = useRef(null)
-  const [editingObjs, setEditingObjs] = useState({})
-  const [editingSubsForObj, setEditingSubsForObj] = useState({})
+export default function DraggablePendingObjList({ objs, email, deletePendingObj, deletePendingSub, addSubToPendingObj, reorderPendingObj, reorderPendingSub, onSave }: {
+  objs: PendingObj[]
+  email: string
+  deletePendingObj: (objId: string) => void | Promise<void>
+  deletePendingSub: (subId: string) => void | Promise<void>
+  addSubToPendingObj: (objId: string, title: string) => void | Promise<void>
+  reorderPendingObj: (email: string, objId: string, newIndex: number, oldIndex: number) => void | Promise<void>
+  reorderPendingSub: (objId: string, subId: string, newIndex: number, oldIndex: number) => void | Promise<void>
+  onSave: () => void | Promise<void>
+}) {
+  const dragItem = useRef<number | null>(null)
+  const dragOverItem = useRef<number | null>(null)
+  const [editingObjs, setEditingObjs] = useState<Record<string, { title: string; target_date?: string | null }>>({})
+  const [editingSubsForObj, setEditingSubsForObj] = useState<Record<string, Record<string, string>>>({})
 
-  function handleDragStart(index) { dragItem.current = index }
-  function handleDragEnter(index) { dragOverItem.current = index }
-  async function handleDragEnd(objId) {
+  function handleDragStart(index: number) { dragItem.current = index }
+  function handleDragEnter(index: number) { dragOverItem.current = index }
+  async function handleDragEnd(objId: string) {
     if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return
     await reorderPendingObj(email, objId, dragOverItem.current, dragItem.current)
     dragItem.current = null; dragOverItem.current = null
   }
 
-  function startEditObj(obj) {
+  function startEditObj(obj: PendingObj) {
     setEditingObjs(prev => ({ ...prev, [obj.id]: { title: obj.title, target_date: obj.target_date } }))
-    const subsMap = {}
+    const subsMap: Record<string, string> = {}
     const subs = (obj.pending_sub_objectives || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
     subs.forEach(s => { subsMap[s.id] = s.title })
     setEditingSubsForObj(prev => ({ ...prev, [obj.id]: subsMap }))
   }
 
-  async function saveAllEdits(obj) {
+  async function saveAllEdits(obj: PendingObj) {
     await supabase.from('pending_objectives').update({
       title: editingObjs[obj.id].title, target_date: editingObjs[obj.id].target_date || null,
     }).eq('id', obj.id)
@@ -45,7 +62,7 @@ export default function DraggablePendingObjList({ objs, email, deletePendingObj,
     await onSave()
   }
 
-  function cancelEdit(objId) {
+  function cancelEdit(objId: string) {
     setEditingObjs(prev => { const n = { ...prev }; delete n[objId]; return n })
     setEditingSubsForObj(prev => { const n = { ...prev }; delete n[objId]; return n })
   }

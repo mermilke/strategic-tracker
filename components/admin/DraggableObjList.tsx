@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { supabase } from '../../lib/supabase'
 import IBtn from './IBtn'
 import AddSubInline from './AddSubInline'
@@ -8,32 +9,65 @@ import DraggableSubList from './DraggableSubList'
 import DragGrip from './DragGrip'
 import { toLetter, fmtDate } from '../../lib/utils'
 
+type SubObjective = {
+  id: string
+  title: string
+  short_title?: string | null
+  is_active?: boolean | null
+  sort_order?: number | null
+  created_at?: string | null
+}
+type Objective = {
+  id: string
+  title: string
+  short_title?: string | null
+  target_date?: string | null
+  created_at?: string | null
+  sub_objectives?: SubObjective[] | null
+}
+type EditObjState = Record<string, { title: string; short_title?: string; target_date?: string | null }>
+type EditSubState = Record<string, Record<string, { title?: string; short_title?: string }>>
+
 // Drag-reorderable list of a person's active strategic objectives. Each card flips
 // into an Edit mode that lets the manager rename the objective and all of its
 // sub-objectives at once, archive/delete either, and add new sub-objectives.
-export default function DraggableObjList({ objs, userId, editingObjs, setEditingObjs, archiveObj, deleteObj, archiveSub, deleteSub, restoreSub, addSubToObj, reorderObj, reorderSub, onSave }) {
-  const dragItem = useRef(null)
-  const dragOverItem = useRef(null)
-  const [editingSubsForObj, setEditingSubsForObj] = useState({}) // { [objId]: { [subId]: title } }
+export default function DraggableObjList({ objs, userId, editingObjs, setEditingObjs, archiveObj, deleteObj, archiveSub, deleteSub, restoreSub, addSubToObj, reorderObj, reorderSub, onSave }: {
+  objs: Objective[]
+  userId: string
+  editingObjs: EditObjState
+  setEditingObjs: Dispatch<SetStateAction<EditObjState>>
+  archiveObj: (objId: string) => void | Promise<void>
+  deleteObj: (objId: string) => void | Promise<void>
+  archiveSub: (subId: string) => void | Promise<void>
+  deleteSub: (subId: string) => void | Promise<void>
+  restoreSub: (subId: string) => void | Promise<void>
+  addSubToObj: (objId: string, title: string) => void | Promise<void>
+  reorderObj: (userId: string, objId: string, newIndex: number, oldIndex: number) => void | Promise<void>
+  reorderSub: (objId: string, subId: string, newIndex: number, oldIndex: number) => void | Promise<void>
+  onSave: () => void | Promise<void>
+}) {
+  const dragItem = useRef<number | null>(null)
+  const dragOverItem = useRef<number | null>(null)
+  const [editingSubsForObj, setEditingSubsForObj] = useState<EditSubState>({}) // { [objId]: { [subId]: title } }
 
-  function handleDragStart(index) { dragItem.current = index }
-  function handleDragEnter(index) { dragOverItem.current = index }
-  async function handleDragEnd(objId) {
+  function handleDragStart(index: number) { dragItem.current = index }
+  function handleDragEnter(index: number) { dragOverItem.current = index }
+  async function handleDragEnd(objId: string) {
     if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return
     await reorderObj(userId, objId, dragOverItem.current, dragItem.current)
     dragItem.current = null; dragOverItem.current = null
   }
 
-  function startEditObj(obj) {
+  function startEditObj(obj: Objective) {
     setEditingObjs(prev => ({ ...prev, [obj.id]: { title: obj.title, short_title: obj.short_title || '', target_date: obj.target_date } }))
     // seed the sub edit fields too
-    const subsMap = {}
+    const subsMap: Record<string, { title: string; short_title: string }> = {}
     const activeSubs = (obj.sub_objectives || []).filter(s => s.is_active)
     activeSubs.forEach(s => { subsMap[s.id] = { title: s.title, short_title: s.short_title || '' } })
     setEditingSubsForObj(prev => ({ ...prev, [obj.id]: subsMap }))
   }
 
-  async function saveAllEdits(obj) {
+  async function saveAllEdits(obj: Objective) {
     await supabase.from('strategic_objectives').update({
       title: editingObjs[obj.id].title, short_title: editingObjs[obj.id].short_title || null, target_date: editingObjs[obj.id].target_date || null,
     }).eq('id', obj.id)
@@ -50,7 +84,7 @@ export default function DraggableObjList({ objs, userId, editingObjs, setEditing
     await onSave()
   }
 
-  function cancelEdit(objId) {
+  function cancelEdit(objId: string) {
     setEditingObjs(prev => { const n = { ...prev }; delete n[objId]; return n })
     setEditingSubsForObj(prev => { const n = { ...prev }; delete n[objId]; return n })
   }

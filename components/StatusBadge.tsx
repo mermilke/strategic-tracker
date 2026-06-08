@@ -1,9 +1,9 @@
-import { STATUS_CONFIG } from '../lib/utils'
+import { STATUS_CONFIG, type StatusKey } from '../lib/utils'
 
-export default function StatusBadge({ status, size = 'md' }) {
+export default function StatusBadge({ status, size = 'md' }: { status?: string | null; size?: 'sm' | 'md' }) {
   if (!status) return <span className="text-xs" style={{ color: 'var(--text-muted)' }}>--</span>
 
-  const config = STATUS_CONFIG[status]
+  const config = STATUS_CONFIG[status as StatusKey]
   if (!config) return null
 
   const isSmall = size === 'sm'

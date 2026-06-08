@@ -3,11 +3,15 @@ import { useState } from 'react'
 import { toLetter } from '../../lib/utils'
 
 // Inline "add strategic objective" form: title, optional target date, and a growing list of sub-objectives.
-export default function AddObjInline({ userId, onAdd, nextNum }) {
+export default function AddObjInline({ userId, onAdd, nextNum }: {
+  userId: string
+  onAdd: (userId: string, title: string, date: string, subs: string[]) => void | Promise<void>
+  nextNum: number
+}) {
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
-  const [subs, setSubs] = useState([''])
+  const [subs, setSubs] = useState<string[]>([''])
 
   async function submit() {
     if (!title.trim()) return

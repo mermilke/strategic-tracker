@@ -2,7 +2,11 @@
 import { useState } from 'react'
 
 // Inline "add sub-objective" control: a dashed button that expands into a titled input.
-export default function AddSubInline({ objId, onAdd, nextLetter }) {
+export default function AddSubInline({ objId, onAdd, nextLetter }: {
+  objId: string
+  onAdd: (objId: string, title: string) => void | Promise<void>
+  nextLetter?: string
+}) {
   const [val, setVal] = useState('')
   const [open, setOpen] = useState(false)
   async function submit() {
