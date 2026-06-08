@@ -63,10 +63,10 @@ function getTodayDateInTimezone(timezone) {
 function verifyCronAuth(request) {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return false
-  }
-  return true
+  // Fail closed: with no secret configured the endpoint stays locked rather
+  // than open to anyone, since it can send email.
+  if (!cronSecret) return false
+  return authHeader === `Bearer ${cronSecret}`
 }
 
 async function getAccessToken(supabaseAdmin) {
