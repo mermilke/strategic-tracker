@@ -3,23 +3,33 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { getAuthenticatedUser } from '../../../lib/auth'
 import { startOfWeek, format } from 'date-fns'
+import type { Database } from '../../../lib/database.types'
 
 export const dynamic = 'force-dynamic'
 
-function getCurrentWeekStart() {
+type SmartsheetRow = {
+  id: string | number
+  topic: string
+  description: string
+  status: string
+  latestUpdate: string
+  previousStatus: string
+}
+
+function getCurrentWeekStart(): string {
   return format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
 }
 
 async function getSupabase() {
   const cookieStore = await cookies()
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { getAll() { return cookieStore.getAll() } } }
   )
 }
 
-export async function GET(request) {
+export async function GET(request: Request) {
   // logged-in users only
   const auth = await getAuthenticatedUser()
   if (!auth) {
@@ -79,15 +89,15 @@ export async function GET(request) {
     const sheet = await res.json()
 
     // column ID -> title map
-    const colMap = {}
+    const colMap: Record<number, string> = {}
     for (const col of sheet.columns) {
       colMap[col.id] = col.title
     }
 
     // only keep rows updated in the last 2 weeks
-    const rows = []
+    const rows: SmartsheetRow[] = []
     for (const row of sheet.rows) {
-      const cellMap = {}
+      const cellMap: Record<string, string> = {}
       for (const cell of row.cells) {
         const colName = colMap[cell.columnId]
         if (colName) {

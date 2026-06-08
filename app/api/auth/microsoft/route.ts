@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-export async function GET(request) {
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const supabaseUserId = searchParams.get('userId')
 
@@ -8,7 +8,7 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
   }
 
-  const clientId = process.env.AZURE_CLIENT_ID
+  const clientId = process.env.AZURE_CLIENT_ID!
   const tenantId = process.env.AZURE_TENANT_ID
   const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/callback`
 

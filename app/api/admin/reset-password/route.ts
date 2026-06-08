@@ -2,23 +2,22 @@ import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import type { Database } from '../../../../lib/database.types'
 
-export async function POST(request) {
+export async function POST(request: Request) {
   try {
     const { email, action } = await request.json()
     // action: 'generate_link' -- returns a recovery link the admin can share
 
     // make sure the caller is an admin, via the SSR client
     const cookieStore = await cookies()
-    const supabaseSSR = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    const supabaseSSR = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-        cookies: {
-          get(name) { return cookieStore.get(name)?.value },
-          set(name, value, options) { cookieStore.set({ name, value, ...options }) },
-          remove(name, options) { cookieStore.delete({ name, ...options }) },
-        },
+        // This route only reads the session to authorize the caller; it never
+        // writes cookies, so getAll alone is enough.
+        cookies: { getAll() { return cookieStore.getAll() } },
       }
     )
     const { data: { user } } = await supabaseSSR.auth.getUser()
@@ -38,8 +37,8 @@ export async function POST(request) {
       }, { status: 500 })
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
+    const supabaseAdmin = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
       serviceKey,
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
@@ -69,6 +68,7 @@ export async function POST(request) {
 
   } catch (err) {
     console.error('Admin reset-password error:', err)
-    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
+    const message = err instanceof Error ? err.message : 'Server error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
