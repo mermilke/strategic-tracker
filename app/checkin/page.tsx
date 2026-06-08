@@ -62,6 +62,7 @@ function CheckinForm() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [showComment, setShowComment] = useState<Record<string, boolean>>({})
   const [attachments, setAttachments] = useState<any[]>([])
   const [uploading, setUploading] = useState(false)
@@ -341,10 +342,13 @@ function CheckinForm() {
       return
     }
     setCommentErrors(new Set())
+    setSaveError(null)
     setSaving(true)
     const subIds = objectives.flatMap(o => o.sub_objectives?.map(s => s.id) || [])
 
-    await Promise.all(subIds.filter(id => formState[id]?.status).map(async (subId) => {
+    // collect the error from every write so a failed row (RLS, network,
+    // constraint) is surfaced instead of silently dropped behind a "Saved!".
+    const checkinErrors = await Promise.all(subIds.filter(id => formState[id]?.status).map(async (subId) => {
       const entry = formState[subId]
       const payload = {
         sub_objective_id: subId,
@@ -358,23 +362,25 @@ function CheckinForm() {
       }
 
       if (entry.existing_id) {
-        await supabase.from('weekly_checkins').update(payload).eq('id', entry.existing_id)
+        const { error } = await supabase.from('weekly_checkins').update(payload).eq('id', entry.existing_id)
+        return error
       } else {
         const res = await supabase.from('weekly_checkins').insert(payload).select().single()
         if (res.data) {
           setFormState(prev => ({ ...prev, [subId]: { ...prev[subId], existing_id: res.data.id } }))
         }
+        return res.error
       }
     }))
 
     // save opportunity rows. they hang off the objective, not the week, so they
     // accumulate over time.
-    await Promise.all(Object.entries(opportunities).map(async ([objId, rows]) => {
-      await Promise.all(rows.map(async (row, idx) => {
+    const oppErrorGroups = await Promise.all(Object.entries(opportunities).map(async ([objId, rows]) => {
+      return Promise.all(rows.map(async (row, idx) => {
         // skip blank rows that were never touched
         const isEmpty = !row.customer?.trim() && !row.project_description?.trim()
           && !row.segment?.trim() && !row.estimated_value_text?.trim()
-        if (isEmpty && !row.id) return
+        if (isEmpty && !row.id) return null
 
         const payload = {
           objective_id: objId,
@@ -389,7 +395,8 @@ function CheckinForm() {
         }
 
         if (row.id) {
-          await supabase.from('objective_opportunities').update(payload).eq('id', row.id)
+          const { error } = await supabase.from('objective_opportunities').update(payload).eq('id', row.id)
+          return error
         } else {
           const res = await supabase.from('objective_opportunities').insert(payload).select().single()
           if (res.data) {
@@ -399,9 +406,19 @@ function CheckinForm() {
               return { ...prev, [objId]: arr }
             })
           }
+          return res.error
         }
       }))
     }))
+
+    const errors = [...checkinErrors, ...oppErrorGroups.flat()].filter(Boolean)
+    if (errors.length > 0) {
+      setSaving(false)
+      const detail = errors[0]?.message ? ` (${errors[0].message})` : ''
+      const noun = errors.length === 1 ? 'change' : 'changes'
+      setSaveError(`Couldn't save ${errors.length} ${noun}. Nothing was lost on screen -- please check your connection and try again.${detail}`)
+      return
+    }
 
     setSaving(false)
     setSaved(true)
@@ -479,6 +496,16 @@ function CheckinForm() {
             </button>
           )}
         </div>
+
+        {saveError && (
+          <div
+            role="alert"
+            className="mb-4 px-4 py-3 rounded-xl text-sm"
+            style={{ background: 'rgba(214,32,39,0.08)', color: '#D62027', border: '1px solid rgba(214,32,39,0.25)' }}
+          >
+            {saveError}
+          </div>
+        )}
 
         {/* all objectives, frozen in read-only preview */}
         <div className="space-y-5" style={readOnly ? { pointerEvents: 'none', opacity: 0.95 } : undefined}>
