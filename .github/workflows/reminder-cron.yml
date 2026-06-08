@@ -41,8 +41,9 @@ jobs:
           TEST_EMAIL: ${{ inputs.test_email }}
         run: |
           if [ -z "$APP_URL" ]; then
-            echo "::error::APP_URL repository variable is not set"
-            exit 1
+            echo "APP_URL is not set, so there is no deployment to ping. Skipping."
+            echo "Set the APP_URL Actions variable (and CRON_SECRET secret) to enable reminders."
+            exit 0
           fi
           if [ -n "$TEST_EMAIL" ]; then
             url="$APP_URL/api/cron/reminders?test=1&email=$TEST_EMAIL"
