@@ -9,7 +9,7 @@ export async function POST(request) {
     // action: 'generate_link' -- returns a recovery link the admin can share
 
     // make sure the caller is an admin, via the SSR client
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabaseSSR = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
