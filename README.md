@@ -157,7 +157,7 @@ GitHub Actions (cron) -- fires at 4pm per timezone --> /api/cron/reminders
 
 ```
 app/
-  page.js                 Entry point; routes to login or dashboard
+  page.tsx                Entry point; routes to login or dashboard
   login/  reset-password/ Supabase email/password and magic-link auth
   dashboard/              Renders the manager or direct-report view by role
   checkin/                The weekly check-in form
@@ -171,9 +171,9 @@ app/
     auth/  admin/         OAuth callback, admin password reset
 components/               Dashboards, briefing UI, charts, navbar, badges
 lib/
-  supabase.js  auth.js    Browser and server Supabase clients
-  briefing-context.js     Assembles the data the briefing model sees
-  utils.js                Week math and status config
+  supabase.ts  auth.ts    Browser and server Supabase clients
+  briefing-context.ts     Assembles the data the briefing model sees
+  utils.ts                Week math and status config
 supabase_setup.sql        Schema, row-level security, triggers
 seed.sql                  Fictional demo team (optional)
 ```

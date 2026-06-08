@@ -49,12 +49,12 @@ browser.
 
 This is the most involved feature. The flow:
 
-1. `lib/briefing-context.js` assembles everything the model should see for a
+1. `lib/briefing-context.ts` assembles everything the model should see for a
    week -- each report's objectives, this-week vs last-week check-ins (so the
    model can spot changes), opportunities, recent 1:1 notes, and a best-effort
    calendar pull for upcoming 1:1s. It's deliberately separate from the route so
    I can test and tweak the context without touching the streaming code.
-2. `app/api/ai/insights/route.js` sends that to Claude Sonnet through the Vercel
+2. `app/api/ai/insights/route.ts` sends that to Claude Sonnet through the Vercel
    AI Gateway with a Zod schema, so the model returns structured sections
    (headline, risks, momentum, talking points) rather than free text.
 3. The response streams to the client as newline-delimited JSON, so the briefing
@@ -70,7 +70,7 @@ error. The rest of the dashboard is unaffected.
 
 ## Timezone-aware reminders
 
-The reminder engine (`app/api/cron/reminders/route.js`) is the other piece worth
+The reminder engine (`app/api/cron/reminders/route.ts`) is the other piece worth
 calling out, mostly for the timezone handling.
 
 - Each report has their own IANA timezone. A reminder should land at 4pm in
@@ -92,8 +92,8 @@ the unit tests exercise.
 ## Testing & CI
 
 Vitest covers the date and status logic (`lib/`) plus the dashboard and admin
-React components (jsdom + Testing Library). GitHub Actions runs the tests and a
-production build on every push and pull request.
+React components (jsdom + Testing Library). GitHub Actions runs the type check,
+the tests, and a production build on every push and pull request.
 The build step passes placeholder Supabase vars so Next can prerender; real keys
 are only needed at runtime.
 
@@ -101,6 +101,4 @@ are only needed at runtime.
 
 - Move the trickier reminder date helpers out of the route into their own module
   so they're importable and even easier to test in isolation.
-- Adopt TypeScript. The app grew quickly in plain JS; the data shapes are stable
-  enough now that types would pay off.
 - Add an integration test around the briefing route with the model mocked.

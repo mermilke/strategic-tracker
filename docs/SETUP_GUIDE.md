@@ -100,6 +100,11 @@ open your browser to **http://localhost:3000** and your app is running.
 
 ## Phase 4: Add your team
 
+The login screen supports two sign-in methods, and you'll use both below. A
+**magic link** emails you a one-time sign-in link with no password, which is the
+easiest way to bootstrap the very first account. **Email + password** is what
+your invited direct reports use day to day. Either method works for any account.
+
 ### Step 8: Create your first user (yourself as admin)
 1. Go to http://localhost:3000/login
 2. Use **Magic Link** mode and enter your email
