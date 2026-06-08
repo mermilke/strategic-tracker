@@ -1,9 +1,27 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import type { Database } from '../../../../lib/database.types'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
+
+// Minimal shape of a Microsoft Graph calendar event, just the fields we read.
+type GraphEvent = {
+  subject?: string
+  start?: { dateTime?: string; date?: string }
+  end?: { dateTime?: string; date?: string }
+  isCancelled?: boolean
+}
+
+// A calendar event tagged with its date/week in the DR's timezone.
+type TaggedMeeting = {
+  meeting: GraphEvent
+  date: string
+  week: string
+  isCancelled: boolean
+  isPast: boolean
+}
 
 // Each direct report carries their own IANA timezone on users.timezone so the
 // email lands at 4pm in their local clock. This default covers anyone who
@@ -20,7 +38,7 @@ const CALENDAR_MAILBOX = process.env.MANAGER_CALENDAR_EMAIL
 // name and the manager's. Covers the common ways people title recurring 1:1s
 // ("Dana 121", "Sam - Dana", "Dana / Sam"). Calendars that don't follow any of
 // these still match on a bare first-name check in isOneOnOneFor().
-function meetingPatternsFor(firstName) {
+function meetingPatternsFor(firstName: string) {
   const dr = firstName.toLowerCase()
   return [
     `${dr} 121`, `${dr} 1:1`, `${dr} 1-1`,
@@ -29,7 +47,7 @@ function meetingPatternsFor(firstName) {
   ]
 }
 
-function escapeHtml(s) {
+function escapeHtml(s: unknown) {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -37,7 +55,7 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;')
 }
 
-function isTargetHour(timezone, targetHour) {
+function isTargetHour(timezone: string, targetHour: number) {
   // Only fire when the DR's local hour is exactly the target. Multiple UTC cron
   // firings (one per timezone x DST combo) line up so each DR gets the email at
   // 4pm in their own clock.
@@ -46,7 +64,7 @@ function isTargetHour(timezone, targetHour) {
   return localTime.getHours() === targetHour
 }
 
-function getTomorrowDateInTimezone(timezone) {
+function getTomorrowDateInTimezone(timezone: string) {
   const now = new Date()
   const localNow = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
   const tomorrow = new Date(localNow)
@@ -54,13 +72,13 @@ function getTomorrowDateInTimezone(timezone) {
   return tomorrow.toISOString().split('T')[0]
 }
 
-function getTodayDateInTimezone(timezone) {
+function getTodayDateInTimezone(timezone: string) {
   const now = new Date()
   const localNow = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
   return localNow.toISOString().split('T')[0]
 }
 
-function verifyCronAuth(request) {
+function verifyCronAuth(request: Request) {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
   // Fail closed: with no secret configured the endpoint stays locked rather
@@ -69,7 +87,7 @@ function verifyCronAuth(request) {
   return authHeader === `Bearer ${cronSecret}`
 }
 
-async function getAccessToken(supabaseAdmin) {
+async function getAccessToken(supabaseAdmin: SupabaseClient<Database>) {
   const { data: users } = await supabaseAdmin
     .from('users')
     .select('id')
@@ -95,8 +113,8 @@ async function getAccessToken(supabaseAdmin) {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
-            client_id: process.env.AZURE_CLIENT_ID,
-            client_secret: process.env.AZURE_CLIENT_SECRET,
+            client_id: process.env.AZURE_CLIENT_ID!,
+            client_secret: process.env.AZURE_CLIENT_SECRET!,
             refresh_token: tokenData.refresh_token,
             grant_type: 'refresh_token',
             scope: 'User.Read Calendars.Read Calendars.Read.Shared offline_access',
@@ -120,7 +138,7 @@ async function getAccessToken(supabaseAdmin) {
 
 // Does this event look like the DR's 1:1? Either it matches a name-based
 // pattern, or it mentions the DR by first name and reads like a 1:1.
-function isOneOnOneFor(event, firstName) {
+function isOneOnOneFor(event: GraphEvent, firstName: string) {
   const subject = event.subject?.toLowerCase() || ''
   const patterns = meetingPatternsFor(firstName)
   if (patterns.some(p => subject.includes(p))) return true
@@ -128,13 +146,13 @@ function isOneOnOneFor(event, firstName) {
   return looksLike11 && subject.includes(firstName)
 }
 
-function findAllMeetingsForDR(events, drName) {
+function findAllMeetingsForDR(events: GraphEvent[], drName: string) {
   const firstName = drName.split(' ')[0].toLowerCase()
   return events.filter(e => isOneOnOneFor(e, firstName))
 }
 
 // Monday of the current week as YYYY-MM-DD in the given timezone
-function getMondayOfWeekInTz(timezone) {
+function getMondayOfWeekInTz(timezone: string) {
   const now = new Date()
   const localNow = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
   const dayOfWeek = localNow.getDay() // 0 = Sun, 1 = Mon, ..., 6 = Sat
@@ -146,7 +164,7 @@ function getMondayOfWeekInTz(timezone) {
 
 // Convert Graph dateTime (UTC, possibly without Z suffix) to a YYYY-MM-DD date
 // in the given timezone, i.e. what the DR sees on their wall calendar.
-function meetingDateInTz(meetingStartDateTime, timezone) {
+function meetingDateInTz(meetingStartDateTime: string | null | undefined, timezone: string): string | null {
   if (!meetingStartDateTime) return null
   // all-day events come back as YYYY-MM-DD with no time, use as-is
   if (/^\d{4}-\d{2}-\d{2}$/.test(meetingStartDateTime)) return meetingStartDateTime
@@ -161,7 +179,7 @@ function meetingDateInTz(meetingStartDateTime, timezone) {
 // Returns YYYY-MM-DD of the most recent weekday at-or-before (date - 1 day).
 // e.g. dayBefore('2026-05-13' (Wed)) === '2026-05-12' (Tue)
 //      dayBefore('2026-05-11' (Mon)) === '2026-05-08' (Fri, skipping weekend)
-function getDayBeforeWeekday(yyyymmdd) {
+function getDayBeforeWeekday(yyyymmdd: string) {
   const d = new Date(yyyymmdd + 'T00:00:00')
   d.setDate(d.getDate() - 1)
   while (d.getDay() === 0 || d.getDay() === 6) {
@@ -171,7 +189,7 @@ function getDayBeforeWeekday(yyyymmdd) {
 }
 
 // Returns YYYY-MM-DD of the Monday of the week containing the given date.
-function getMondayOfDate(yyyymmdd) {
+function getMondayOfDate(yyyymmdd: string) {
   const d = new Date(yyyymmdd + 'T00:00:00')
   const day = d.getDay()
   const offset = day === 0 ? -6 : 1 - day
@@ -182,7 +200,7 @@ function getMondayOfDate(yyyymmdd) {
 // Meeting start as a unix ms timestamp (UTC). Lets us tell whether the meeting
 // has actually started yet rather than just comparing dates, which matters when
 // the meeting is later today than the 4pm cron.
-function meetingStartMs(meetingStartDateTime) {
+function meetingStartMs(meetingStartDateTime: string | null | undefined): number | null {
   if (!meetingStartDateTime) return null
   if (/^\d{4}-\d{2}-\d{2}$/.test(meetingStartDateTime)) {
     return new Date(meetingStartDateTime + 'T00:00:00Z').getTime()
@@ -193,7 +211,7 @@ function meetingStartMs(meetingStartDateTime) {
   return new Date(iso).getTime()
 }
 
-function buildReminderEmail(firstName, meetingSubject, meetingDate, meetingTime, siteUrl) {
+function buildReminderEmail(firstName: string, meetingSubject: string, meetingDate: string, meetingTime: string, siteUrl: string) {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1a1a2e;">
       <div style="text-align: center; margin-bottom: 32px;">
@@ -246,7 +264,7 @@ function buildReminderEmail(firstName, meetingSubject, meetingDate, meetingTime,
   `
 }
 
-function buildOverdueEmail(firstName, meetingSubject, meetingDate, meetingTime, siteUrl) {
+function buildOverdueEmail(firstName: string, meetingSubject: string, meetingDate: string, meetingTime: string, siteUrl: string) {
   const dateLine = meetingTime ? `${meetingDate} at ${meetingTime}` : meetingDate
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1a1a2e;">
@@ -300,7 +318,7 @@ function buildOverdueEmail(firstName, meetingSubject, meetingDate, meetingTime, 
   `
 }
 
-function buildCancelledEmail(firstName, siteUrl) {
+function buildCancelledEmail(firstName: string, siteUrl: string) {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1a1a2e;">
       <div style="text-align: center; margin-bottom: 32px;">
@@ -350,7 +368,7 @@ function buildCancelledEmail(firstName, siteUrl) {
   `
 }
 
-export async function GET(request) {
+export async function GET(request: Request) {
   if (!verifyCronAuth(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -368,9 +386,9 @@ export async function GET(request) {
   }
 
   const resend = new Resend(resendKey)
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseAdmin = createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -403,7 +421,7 @@ export async function GET(request) {
     monday.setDate(tempDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
     const weekStart = monday.toISOString().split('T')[0]
 
-    const results = []
+    const results: any[] = []
 
     for (const dr of directReports) {
       const tz = dr.timezone || DEFAULT_TIMEZONE
@@ -428,7 +446,7 @@ export async function GET(request) {
           .gte('sent_at', dedupeCutoff)
           .limit(1)
 
-        if (existingLog?.length > 0) {
+        if ((existingLog?.length ?? 0) > 0) {
           results.push({ user: dr.full_name, status: 'already_sent_today' })
           continue
         }
@@ -470,7 +488,7 @@ export async function GET(request) {
         }
       )
 
-      let allDrMeetings = []
+      let allDrMeetings: GraphEvent[] = []
       if (calRes.ok) {
         const calData = await calRes.json()
         // keep cancelled events, they trigger reminders too: a cancelled future
@@ -488,12 +506,12 @@ export async function GET(request) {
           return {
             meeting: m,
             date: meetingDateInTz(m.start?.dateTime || m.start?.date, tz),
-            week: null, // computed below
+            week: '', // computed below
             isCancelled: !!m.isCancelled,
             isPast: startMs !== null && startMs <= nowMs,
           }
         })
-        .filter(x => x.date)
+        .filter((x): x is TaggedMeeting => !!x.date)
       meetings.forEach(x => { x.week = getMondayOfDate(x.date) })
       meetings.sort((a, b) => a.date.localeCompare(b.date))
 
@@ -507,7 +525,7 @@ export async function GET(request) {
       // week the intended meeting is the earliest LIVE one, or the earliest
       // cancelled if none are live. nextIntended is then the intended meeting of
       // the earliest such week, so Wed-cancelled + Fri-live resolves to Fri.
-      const futureByWeek = {}
+      const futureByWeek: Record<string, TaggedMeeting[]> = {}
       for (const m of meetings) {
         if (!m.isPast) {
           if (!futureByWeek[m.week]) futureByWeek[m.week] = []
@@ -515,12 +533,12 @@ export async function GET(request) {
         }
       }
       const futureWeeks = Object.keys(futureByWeek).sort()
-      let nextIntended = null
+      let nextIntended: TaggedMeeting | null = null
       for (const week of futureWeeks) {
         const wkMeetings = futureByWeek[week]
         const live = wkMeetings.find(x => !x.isCancelled)
         const cancelled = wkMeetings.find(x => x.isCancelled)
-        nextIntended = live || cancelled
+        nextIntended = live || cancelled || null
         if (nextIntended) break
       }
 
@@ -532,9 +550,9 @@ export async function GET(request) {
       const lastPast = pastMeetings[pastMeetings.length - 1] || null
 
       // decide email type and target
-      let targetMeeting = null
+      let targetMeeting: GraphEvent | null = null
       let targetIsCancelled = false
-      let emailType = null // 'reminder' | 'overdue' | 'cancelled'
+      let emailType: 'reminder' | 'overdue' | 'cancelled' | null = null
 
       if (nextIntended) {
         const dayBefore = getDayBeforeWeekday(nextIntended.date)
@@ -570,7 +588,7 @@ export async function GET(request) {
       // Work out the target week and check for submissions. Target week is the
       // meeting's week, but if the target is in a PAST week, a check-in submitted
       // for the CURRENT week also buys peace (Q4B).
-      const targetDate = meetingDateInTz(targetMeeting.start?.dateTime || targetMeeting.start?.date, tz)
+      const targetDate = meetingDateInTz(targetMeeting.start?.dateTime || targetMeeting.start?.date, tz) || todayDate
       const targetWeekStart = getMondayOfDate(targetDate)
       const currentWeekStart = getMondayOfDate(todayDate)
 
@@ -584,7 +602,7 @@ export async function GET(request) {
         .in('sub_objective_id', subIds)
         .limit(weeksToCheck.length * subIds.length)
 
-      if (checkins?.length > 0) {
+      if (checkins && checkins.length > 0) {
         results.push({
           user: dr.full_name,
           status: 'already_submitted',
@@ -595,7 +613,7 @@ export async function GET(request) {
       }
 
       // build email
-      const dtRaw = targetMeeting.start?.dateTime || targetMeeting.start?.date
+      const dtRaw = targetMeeting.start?.dateTime || targetMeeting.start?.date || ''
       const dtIso = /^\d{4}-\d{2}-\d{2}$/.test(dtRaw)
         ? dtRaw + 'T00:00:00Z'
         : (/Z$/.test(dtRaw) || /[+-]\d{2}:?\d{2}$/.test(dtRaw) ? dtRaw : dtRaw + 'Z')
@@ -639,12 +657,12 @@ export async function GET(request) {
         await supabaseAdmin.from('reminder_log').insert({
           user_id: dr.id,
           week_start: targetWeekStart,
-          email_type: emailType,
+          email_type: emailType!,
           meeting_subject: targetMeeting.subject || null,
         })
 
         results.push({ user: dr.full_name, status: `${emailType}_sent`, meeting: targetMeeting.subject })
-      } catch (emailErr) {
+      } catch (emailErr: any) {
         console.error(`Failed to send reminder to ${dr.email}:`, emailErr)
         results.push({ user: dr.full_name, status: 'send_failed', error: emailErr.message })
       }

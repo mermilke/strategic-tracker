@@ -6,6 +6,9 @@ import { streamObject } from 'ai'
 import { z } from 'zod'
 import { getAuthenticatedUser } from '../../../../lib/auth'
 import { buildBriefingContext } from '../../../../lib/briefing-context'
+import type { Database } from '../../../../lib/database.types'
+
+type BriefingContext = Awaited<ReturnType<typeof buildBriefingContext>>
 
 // Latest Sonnet at implementation time. Check the gateway before bumping:
 //   GET https://ai-gateway.vercel.sh/v1/models
@@ -25,7 +28,12 @@ const PRICE = {
   cache_write_per_mtok: 3.75,
 }
 
-function calcCostCents({ input_tokens = 0, output_tokens = 0, cache_read = 0, cache_write = 0 }) {
+function calcCostCents({ input_tokens = 0, output_tokens = 0, cache_read = 0, cache_write = 0 }: {
+  input_tokens?: number
+  output_tokens?: number
+  cache_read?: number
+  cache_write?: number
+}) {
   const uncached_in = Math.max(0, input_tokens - cache_read - cache_write)
   const dollars =
     uncached_in * PRICE.input_per_mtok / 1e6 +
@@ -108,7 +116,7 @@ RULES:
 - Use objective short_title if present; otherwise the full title.
 - ONE entry per DR in talking_points. Never include the same DR more than once -- consolidate their points under a single entry.`
 
-function userPromptFromContext(ctx) {
+function userPromptFromContext(ctx: BriefingContext) {
   const today = new Date().toISOString().slice(0, 10)
   const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long', timeZone: APP_TIMEZONE })
   return [
@@ -124,9 +132,9 @@ function userPromptFromContext(ctx) {
 }
 
 function newAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
 
@@ -134,9 +142,9 @@ function newAdmin() {
 // a stored briefing is viewable by any manager/admin without the service-role key.
 async function sessionClient() {
   const cookieStore = await cookies()
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { getAll() { return cookieStore.getAll() } } }
   )
 }
@@ -150,7 +158,12 @@ function canGenerate() {
   return !DEMO_MODE && !!process.env.SUPABASE_SERVICE_ROLE_KEY && !!process.env.AI_GATEWAY_API_KEY
 }
 
-async function gateRequest(request) {
+type AuthCtx = NonNullable<Awaited<ReturnType<typeof getAuthenticatedUser>>>
+type GateResult =
+  | { error: string; status: number; auth?: undefined }
+  | { error?: undefined; status?: undefined; auth: AuthCtx }
+
+async function gateRequest(request: Request): Promise<GateResult> {
   const auth = await getAuthenticatedUser()
   if (!auth) return { error: 'Unauthorized', status: 401 }
   const role = auth.profile?.role
@@ -160,7 +173,7 @@ async function gateRequest(request) {
   return { auth }
 }
 
-function ndjsonChunk(obj) {
+function ndjsonChunk(obj: unknown) {
   return new TextEncoder().encode(JSON.stringify(obj) + '\n')
 }
 
@@ -176,7 +189,7 @@ export const maxDuration = 60 // seconds (Vercel Fluid Compute)
  *     - {type:'done', meta}                     (final line)
  *     - {type:'error', message}                 (terminal)
  */
-export async function POST(request) {
+export async function POST(request: Request) {
   const gate = await gateRequest(request)
   if (gate.error) return NextResponse.json({ error: gate.error }, { status: gate.status })
   if (DEMO_MODE) {
@@ -268,7 +281,7 @@ export async function POST(request) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      let finalObject = null
+      let finalObject: any = null
       try {
         for await (const partial of result.partialObjectStream) {
           finalObject = partial
@@ -279,9 +292,9 @@ export async function POST(request) {
         const providerMeta = await result.providerMetadata
         const latency_ms = Date.now() - startTime
 
-        const anthropicMeta = providerMeta?.anthropic || {}
-        const cache_read = anthropicMeta.cacheReadInputTokens || 0
-        const cache_write = anthropicMeta.cacheCreationInputTokens || 0
+        const anthropicMeta: Record<string, unknown> = providerMeta?.anthropic || {}
+        const cache_read = Number(anthropicMeta.cacheReadInputTokens) || 0
+        const cache_write = Number(anthropicMeta.cacheCreationInputTokens) || 0
         const input_tokens = usage.inputTokens || 0
         const output_tokens = usage.outputTokens || 0
         const cost_cents = calcCostCents({
@@ -292,7 +305,7 @@ export async function POST(request) {
         // the raw enum (not_started, on_hold, etc.) from the data context into
         // prose. Walk every string in the JSON and rewrite them to bold natural
         // English so no underscored variable names ever reach the UI.
-        const STATUS_REWRITES = [
+        const STATUS_REWRITES: [RegExp, string][] = [
           [/\bnot_started\b/gi,  '**not started**'],
           [/\bon_track\b/gi,     '**on track**'],
           [/\bat_risk\b/gi,      '**at risk**'],
@@ -300,13 +313,13 @@ export async function POST(request) {
           [/\bon_hold\b/gi,      '**on hold**'],
           [/\bcompleted\b/gi,    '**completed**'],
         ]
-        function scrubStrings(node) {
+        function scrubStrings(node: any): any {
           if (typeof node === 'string') {
             return STATUS_REWRITES.reduce((s, [re, repl]) => s.replace(re, repl), node)
           }
           if (Array.isArray(node)) return node.map(scrubStrings)
           if (node && typeof node === 'object') {
-            const out = {}
+            const out: Record<string, any> = {}
             for (const k of Object.keys(node)) out[k] = scrubStrings(node[k])
             return out
           }
@@ -349,7 +362,7 @@ export async function POST(request) {
             cached_tokens: cache_read,
             cost_cents,
             latency_ms,
-            generated_by: gate.auth.user.id,
+            generated_by: gate.auth!.user.id,
             generated_at: new Date().toISOString(),
           }, { onConflict: 'week_start' })
         if (upsertErr) {
@@ -369,7 +382,7 @@ export async function POST(request) {
           },
         }))
         controller.close()
-      } catch (err) {
+      } catch (err: any) {
         console.error('Stream failure, discarding partial:', err)
         // Dig out the most useful error string. Gateway errors stash the
         // human-readable message in responseBody.
@@ -405,7 +418,7 @@ export async function POST(request) {
  * GET /api/ai/insights?history=1
  *   returns list of past briefings (week_start, generated_at, model, cost_cents).
  */
-export async function GET(request) {
+export async function GET(request: Request) {
   const gate = await gateRequest(request)
   if (gate.error) return NextResponse.json({ error: gate.error }, { status: gate.status })
 
