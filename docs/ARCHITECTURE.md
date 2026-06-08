@@ -17,7 +17,7 @@ enforcement boundary, not the UI.
 
 ## Data model
 
-Six core tables, all keyed off Supabase auth:
+The core of the schema is a handful of tables, all keyed off Supabase auth:
 
 - `users` -- profile + role (`manager`, `admin`, `direct_report`) + timezone, one row
   per auth user, created by a trigger on signup.
@@ -91,8 +91,9 @@ the unit tests exercise.
 
 ## Testing & CI
 
-`lib/utils.js` and the date logic are covered by Vitest unit tests. GitHub
-Actions runs the tests and a production build on every push and pull request.
+Vitest covers the date and status logic (`lib/`) plus the dashboard and admin
+React components (jsdom + Testing Library). GitHub Actions runs the tests and a
+production build on every push and pull request.
 The build step passes placeholder Supabase vars so Next can prerender; real keys
 are only needed at runtime.
 
