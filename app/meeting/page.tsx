@@ -475,7 +475,7 @@ function MeetingContent() {
               <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Connect your Outlook calendar to see today&apos;s schedule</span>
             </div>
             <button
-              onClick={() => window.location.href = `/api/auth/microsoft?userId=${user.id}`}
+              onClick={() => window.location.href = '/api/auth/microsoft'}
               className="text-xs px-4 py-2 rounded-lg font-semibold"
               style={{ background: 'linear-gradient(135deg, #2563EB, #1D4ED8)', color: 'white', border: 'none', cursor: 'pointer' }}
             >

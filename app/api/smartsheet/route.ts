@@ -42,6 +42,15 @@ export async function GET(request: Request) {
   const currentWeek = getCurrentWeekStart()
   const isHistorical = requestedWeek && requestedWeek < currentWeek
 
+  // Snapshots are keyed by user_id. A caller may read/write their own, and a
+  // manager or admin may do so for a report they're viewing in the 1:1 page;
+  // anyone else passing another id is rejected. (The DB reads/writes below also
+  // run under RLS through the session client -- this is the explicit guard.)
+  const isManager = auth.profile.role === 'manager' || auth.profile.role === 'admin'
+  if (userId && userId !== auth.user.id && !isManager) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   // historical week: read the DB snapshot instead of hitting Smartsheet
   if (isHistorical && userId) {
     const supabase = await getSupabase()

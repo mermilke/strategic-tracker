@@ -93,6 +93,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
   }
 
+  // This route reads microsoft_tokens with the service-role key, which bypasses
+  // RLS, so guard the id ourselves: a caller may only use their own stored token.
+  // Letting a logged-in user pass someone else's id would hand them that user's
+  // calendar access.
+  if (userId !== auth.user.id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   if (!CALENDAR_MAILBOX) {
     return NextResponse.json({ error: 'Calendar integration not configured' }, { status: 501 })
   }

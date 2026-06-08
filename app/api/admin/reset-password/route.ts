@@ -4,6 +4,27 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { Database } from '../../../../lib/database.types'
 
+// Best-effort throttle so a compromised admin account can't mint recovery links
+// in a tight loop. This Map lives in the function instance, so on serverless it
+// is per-instance and resets on a cold start -- a production deployment should
+// back it with a shared store (e.g. Upstash Redis). It still blunts a burst from
+// any single warm instance.
+const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_WINDOW_MS = 5 * 60_000
+const linkAttempts = new Map<string, number[]>()
+
+function isRateLimited(key: string): boolean {
+  const now = Date.now()
+  const recent = (linkAttempts.get(key) || []).filter(t => now - t < RATE_LIMIT_WINDOW_MS)
+  if (recent.length >= RATE_LIMIT_MAX) {
+    linkAttempts.set(key, recent)
+    return true
+  }
+  recent.push(now)
+  linkAttempts.set(key, recent)
+  return false
+}
+
 export async function POST(request: Request) {
   try {
     const { email, action } = await request.json()
@@ -44,6 +65,12 @@ export async function POST(request: Request) {
     )
 
     if (action === 'generate_link') {
+      // throttle per admin so one account can't churn out links for many targets
+      if (isRateLimited(user.id)) {
+        return NextResponse.json({
+          error: 'Too many reset links generated recently. Please wait a few minutes and try again.'
+        }, { status: 429 })
+      }
       // recovery link, sidesteps the email rate limits
       const { data, error } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',

@@ -1,29 +1,43 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
+import { getAuthenticatedUser } from '../../../../lib/auth'
 import type { Database } from '../../../../lib/database.types'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
-  const state = searchParams.get('state') // supabase user id
+  const state = searchParams.get('state')
   const error = searchParams.get('error')
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
   if (error) {
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msError=${error}`
-    )
+    return NextResponse.redirect(`${siteUrl}/meeting?msError=${error}`)
   }
 
   if (!code || !state) {
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msError=missing_params`
-    )
+    return NextResponse.redirect(`${siteUrl}/meeting?msError=missing_params`)
+  }
+
+  // Tokens are stored for the authenticated user that started the flow -- never
+  // for an id pulled from the request -- and the state must match the nonce we
+  // set on the connect step. Both checks together stop a forged callback from
+  // writing tokens onto another account.
+  const auth = await getAuthenticatedUser()
+  if (!auth) {
+    return NextResponse.redirect(`${siteUrl}/meeting?msError=not_signed_in`)
+  }
+
+  const cookieStore = await cookies()
+  const expectedState = cookieStore.get('ms_oauth_state')?.value
+  if (!expectedState || expectedState !== state) {
+    return NextResponse.redirect(`${siteUrl}/meeting?msError=state_mismatch`)
   }
 
   const clientId = process.env.AZURE_CLIENT_ID!
   const clientSecret = process.env.AZURE_CLIENT_SECRET!
   const tenantId = process.env.AZURE_TENANT_ID
-  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/callback`
+  const redirectUri = `${siteUrl}/api/auth/callback`
 
   try {
     // swap the code for tokens
@@ -43,9 +57,7 @@ export async function GET(request: Request) {
     if (!tokenRes.ok) {
       const err = await tokenRes.text()
       console.error('Token exchange failed:', err)
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msError=token_failed`
-      )
+      return NextResponse.redirect(`${siteUrl}/meeting?msError=token_failed`)
     }
 
     const tokens = await tokenRes.json()
@@ -59,7 +71,7 @@ export async function GET(request: Request) {
     const { error: upsertError } = await supabaseAdmin
       .from('microsoft_tokens')
       .upsert({
-        user_id: state,
+        user_id: auth.user.id,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
@@ -67,18 +79,14 @@ export async function GET(request: Request) {
 
     if (upsertError) {
       console.error('Token storage failed:', upsertError)
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msError=storage_failed`
-      )
+      return NextResponse.redirect(`${siteUrl}/meeting?msError=storage_failed`)
     }
 
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msConnected=true`
-    )
+    const res = NextResponse.redirect(`${siteUrl}/meeting?msConnected=true`)
+    res.cookies.delete('ms_oauth_state')
+    return res
   } catch (err) {
     console.error('OAuth callback error:', err)
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msError=unknown`
-    )
+    return NextResponse.redirect(`${siteUrl}/meeting?msError=unknown`)
   }
 }
