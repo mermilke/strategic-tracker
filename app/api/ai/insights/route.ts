@@ -163,7 +163,7 @@ type GateResult =
   | { error: string; status: number; auth?: undefined }
   | { error?: undefined; status?: undefined; auth: AuthCtx }
 
-async function gateRequest(request: Request): Promise<GateResult> {
+async function gateRequest(): Promise<GateResult> {
   const auth = await getAuthenticatedUser()
   if (!auth) return { error: 'Unauthorized', status: 401 }
   const role = auth.profile?.role
@@ -190,7 +190,7 @@ export const maxDuration = 60 // seconds (Vercel Fluid Compute)
  *     - {type:'error', message}                 (terminal)
  */
 export async function POST(request: Request) {
-  const gate = await gateRequest(request)
+  const gate = await gateRequest()
   if (gate.error) return NextResponse.json({ error: gate.error }, { status: gate.status })
   if (DEMO_MODE) {
     return NextResponse.json({ error: 'Briefing generation is disabled in the demo.' }, { status: 403 })
@@ -305,6 +305,10 @@ export async function POST(request: Request) {
         // the raw enum (not_started, on_hold, etc.) from the data context into
         // prose. Walk every string in the JSON and rewrite them to bold natural
         // English so no underscored variable names ever reach the UI.
+        // NOTE: the ** markdown couples this stored JSON to the markdown renderer
+        // in the UI. It's a deliberate shortcut -- if the briefing is ever
+        // delivered another way (the email/PDF on the roadmap), rewrite to plain
+        // English here and let each surface apply its own emphasis.
         const STATUS_REWRITES: [RegExp, string][] = [
           [/\bnot_started\b/gi,  '**not started**'],
           [/\bon_track\b/gi,     '**on track**'],
@@ -419,7 +423,7 @@ export async function POST(request: Request) {
  *   returns list of past briefings (week_start, generated_at, model, cost_cents).
  */
 export async function GET(request: Request) {
-  const gate = await gateRequest(request)
+  const gate = await gateRequest()
   if (gate.error) return NextResponse.json({ error: gate.error }, { status: gate.status })
 
   const { searchParams } = new URL(request.url)
