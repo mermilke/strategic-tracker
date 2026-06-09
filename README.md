@@ -236,7 +236,10 @@ npm run test:integration   # needs Docker + `npx supabase start`
 
 GitHub Actions type-checks, verifies `supabase_setup.sql` is in sync with the
 migrations, runs the unit tests, and does a production build on every push and
-pull request (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+pull request. A second job stands up a local Supabase stack and runs the
+row-level-security integration tests, so a change that weakens an RLS policy
+fails CI rather than slipping through (see
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## Deploying
 
@@ -267,10 +270,19 @@ Things I'm aware of and would improve given time:
   exercises the row-level-security policies against a local Postgres. The API
   route handlers themselves are still verified by hand; integration tests around
   them would make refactors safer.
-- **The 1:1 calendar match is heuristic.** Reminders identify each report's 1:1
-  by matching calendar event titles against common name patterns, so an unusually
+- **The 1:1 calendar match is heuristic.** The briefing and the reminders
+  identify each report's 1:1 by matching calendar event titles against common
+  name patterns (shared matcher in `lib/calendar-match.ts`), so an unusually
   titled meeting can be missed. Matching on a stable calendar category or the
   attendee list would be more robust.
+- **The shared 1:1 notes are last-write-wins, not a true concurrent editor.**
+  Each edit broadcasts the whole notes field and the other side replaces its
+  copy, which is fine for the usual case (one person typing during the call) but
+  means simultaneous edits can overwrite each other. A merge/CRDT or operational
+  transform would be needed for real co-editing. The live channel is also a plain
+  Supabase broadcast, which isn't access-controlled by row-level security the way
+  the persisted notes are; moving it to a private, RLS-authorized channel would
+  close that gap.
 - **Reminders fire on a fixed UTC schedule.** The cron pings a handful of UTC
   times to approximate 4pm across regions rather than each report's exact local
   time. Per-user scheduled jobs would be more precise.

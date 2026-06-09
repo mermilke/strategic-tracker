@@ -293,6 +293,12 @@ function MeetingContent() {
     }
     loadNotes()
 
+    // Live sync is a plain broadcast channel: each edit sends the whole textarea
+    // and the receiver replaces its copy, so it's last-write-wins, not a true
+    // concurrent merge. Note that broadcast channels aren't governed by table
+    // RLS -- anyone who knew a report's UUID and the week could subscribe -- so
+    // this carries only the notes already visible in the 1:1, nothing more
+    // sensitive. Private (RLS-authorized) channels would close that gap.
     const channelName = `meeting:${selectedUserId}:${selectedWeek}`
     const channel = supabase.channel(channelName)
 
