@@ -27,3 +27,22 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+  # The row-level-security tests are the security proof, so they gate merges too.
+  # They need a real Postgres + GoTrue (they create signed-in users), so spin up
+  # the full local Supabase stack rather than just a Postgres service container.
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Starts the Dockerized stack and applies supabase/migrations to it. The
+      # test helpers read the local URL + keys from `supabase status` at runtime.
+      - run: npx supabase start
+      - run: npm run test:integration
+      - if: always()
+        run: npx supabase stop
