@@ -87,14 +87,14 @@ $$;
 DROP POLICY IF EXISTS "users_select_all" ON users;
 DROP POLICY IF EXISTS "users_select" ON users;
 CREATE POLICY "users_select" ON users FOR SELECT USING (
-  id = auth.uid() OR public.is_manager_or_admin()
+  id = (select auth.uid()) OR (select public.is_manager_or_admin())
 );
 
 -- A user may update their own row, but the role column is guarded by the trigger
 -- below so a report can't promote themselves to admin.
 DROP POLICY IF EXISTS "users_update_own" ON users;
 CREATE POLICY "users_update_own" ON users FOR UPDATE
-  USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+  USING ((select auth.uid()) = id) WITH CHECK ((select auth.uid()) = id);
 
 -- Block self-service role changes. A service-role/SQL context (auth.uid() IS
 -- NULL, e.g. the Supabase Table Editor) and existing managers/admins are
@@ -127,56 +127,56 @@ REVOKE EXECUTE ON FUNCTION public.enforce_user_role_guard() FROM PUBLIC, anon, a
 
 -- Objectives: manager/admin can see all; direct reports see their own
 CREATE POLICY "objectives_select" ON strategic_objectives FOR SELECT USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
-  OR owner_id = auth.uid()
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
+  OR owner_id = (select auth.uid())
 );
 CREATE POLICY "objectives_insert_admin" ON strategic_objectives FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
 );
 CREATE POLICY "objectives_update_admin" ON strategic_objectives FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
 );
 CREATE POLICY "objectives_delete_admin" ON strategic_objectives FOR DELETE USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
 );
 
 -- Sub-objectives: same pattern
 CREATE POLICY "subs_select" ON sub_objectives FOR SELECT USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
   OR EXISTS (
     SELECT 1 FROM strategic_objectives o
-    WHERE o.id = objective_id AND o.owner_id = auth.uid()
+    WHERE o.id = objective_id AND o.owner_id = (select auth.uid())
   )
 );
 CREATE POLICY "subs_insert_admin" ON sub_objectives FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
 );
 CREATE POLICY "subs_update_admin" ON sub_objectives FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
 );
 CREATE POLICY "subs_delete_admin" ON sub_objectives FOR DELETE USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
 );
 
 -- Check-ins: manager sees all; direct reports see/edit their own.
 -- Insert must be self-submitted AND against a sub-objective the user owns
 -- (or the user is an admin), so a report can't write onto someone else's goal.
 CREATE POLICY "checkins_select" ON weekly_checkins FOR SELECT USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
-  OR submitted_by = auth.uid()
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
+  OR submitted_by = (select auth.uid())
 );
 CREATE POLICY "checkins_insert_own" ON weekly_checkins FOR INSERT WITH CHECK (
-  submitted_by = auth.uid()
+  submitted_by = (select auth.uid())
   AND (
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+    EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
     OR EXISTS (
       SELECT 1 FROM sub_objectives s
       JOIN strategic_objectives o ON o.id = s.objective_id
-      WHERE s.id = sub_objective_id AND o.owner_id = auth.uid()
+      WHERE s.id = sub_objective_id AND o.owner_id = (select auth.uid())
     )
   )
 );
-CREATE POLICY "checkins_update_own" ON weekly_checkins FOR UPDATE USING (submitted_by = auth.uid());
+CREATE POLICY "checkins_update_own" ON weekly_checkins FOR UPDATE USING (submitted_by = (select auth.uid()));
 
 -- Trigger: auto-create user profile on signup.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS pending_users (
 
 ALTER TABLE pending_users ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "pending_admin_only" ON pending_users FOR ALL USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
 );
 
 -- Add sort_order to strategic_objectives if not present
@@ -248,10 +248,10 @@ ALTER TABLE pending_objectives ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pending_sub_objectives ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "pending_obj_admin_only" ON pending_objectives FOR ALL USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
 );
 CREATE POLICY "pending_sub_admin_only" ON pending_sub_objectives FOR ALL USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
 );
 
 -- Updated trigger: auto-create user profile and migrate pending objectives.
@@ -313,16 +313,16 @@ CREATE TABLE IF NOT EXISTS meeting_notes (
 ALTER TABLE meeting_notes ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "meeting_notes_select" ON meeting_notes FOR SELECT USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
-  OR user_id = auth.uid()
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
+  OR user_id = (select auth.uid())
 );
 CREATE POLICY "meeting_notes_insert" ON meeting_notes FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
-  OR user_id = auth.uid()
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
+  OR user_id = (select auth.uid())
 );
 CREATE POLICY "meeting_notes_update" ON meeting_notes FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
-  OR user_id = auth.uid()
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
+  OR user_id = (select auth.uid())
 );
 
 -- Meeting attachments: files and links for 1:1 meetings.
@@ -341,12 +341,12 @@ CREATE TABLE IF NOT EXISTS meeting_attachments (
 ALTER TABLE meeting_attachments ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "attachments_select" ON meeting_attachments FOR SELECT USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
-  OR user_id = auth.uid()
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
+  OR user_id = (select auth.uid())
 );
-CREATE POLICY "attachments_insert_own" ON meeting_attachments FOR INSERT WITH CHECK (user_id = auth.uid());
-CREATE POLICY "attachments_update_own" ON meeting_attachments FOR UPDATE USING (user_id = auth.uid());
-CREATE POLICY "attachments_delete_own" ON meeting_attachments FOR DELETE USING (user_id = auth.uid());
+CREATE POLICY "attachments_insert_own" ON meeting_attachments FOR INSERT WITH CHECK (user_id = (select auth.uid()));
+CREATE POLICY "attachments_update_own" ON meeting_attachments FOR UPDATE USING (user_id = (select auth.uid()));
+CREATE POLICY "attachments_delete_own" ON meeting_attachments FOR DELETE USING (user_id = (select auth.uid()));
 
 -- Storage bucket for meeting files (run in Supabase Dashboard > Storage > New Bucket)
 -- Name: meeting-files, Public: false, File size limit: 10MB
@@ -382,22 +382,22 @@ ALTER TABLE bug_reports ENABLE ROW LEVEL SECURITY;
 
 -- Users can insert their own bug reports
 CREATE POLICY "bug_reports_insert_own" ON bug_reports
-  FOR INSERT WITH CHECK (user_id = auth.uid());
+  FOR INSERT WITH CHECK (user_id = (select auth.uid()));
 
 -- Users can read their own bug reports
 CREATE POLICY "bug_reports_select_own" ON bug_reports
-  FOR SELECT USING (user_id = auth.uid());
+  FOR SELECT USING (user_id = (select auth.uid()));
 
 -- manager/admin can read all bug reports
 CREATE POLICY "bug_reports_select_admin" ON bug_reports
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+    EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
   );
 
 -- manager/admin can update bug report status
 CREATE POLICY "bug_reports_update_admin" ON bug_reports
   FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+    EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
   );
 
 -- 9. Microsoft tokens table, for OAuth calendar/OneNote integration.
@@ -470,20 +470,20 @@ CREATE INDEX IF NOT EXISTS idx_objective_opportunities_obj ON objective_opportun
 ALTER TABLE objective_opportunities ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "opp_select" ON objective_opportunities FOR SELECT USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager','admin'))
-  OR EXISTS (SELECT 1 FROM strategic_objectives o WHERE o.id = objective_id AND o.owner_id = auth.uid())
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager','admin'))
+  OR EXISTS (SELECT 1 FROM strategic_objectives o WHERE o.id = objective_id AND o.owner_id = (select auth.uid()))
 );
 CREATE POLICY "opp_insert" ON objective_opportunities FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager','admin'))
-  OR EXISTS (SELECT 1 FROM strategic_objectives o WHERE o.id = objective_id AND o.owner_id = auth.uid())
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager','admin'))
+  OR EXISTS (SELECT 1 FROM strategic_objectives o WHERE o.id = objective_id AND o.owner_id = (select auth.uid()))
 );
 CREATE POLICY "opp_update" ON objective_opportunities FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager','admin'))
-  OR EXISTS (SELECT 1 FROM strategic_objectives o WHERE o.id = objective_id AND o.owner_id = auth.uid())
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager','admin'))
+  OR EXISTS (SELECT 1 FROM strategic_objectives o WHERE o.id = objective_id AND o.owner_id = (select auth.uid()))
 );
 CREATE POLICY "opp_delete" ON objective_opportunities FOR DELETE USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager','admin'))
-  OR EXISTS (SELECT 1 FROM strategic_objectives o WHERE o.id = objective_id AND o.owner_id = auth.uid())
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager','admin'))
+  OR EXISTS (SELECT 1 FROM strategic_objectives o WHERE o.id = objective_id AND o.owner_id = (select auth.uid()))
 );
 
 -- Backfill: one implicit sub for every active objective with no active sub-objectives
@@ -513,16 +513,16 @@ CREATE INDEX IF NOT EXISTS idx_smartsheet_snapshots_user_week ON smartsheet_snap
 ALTER TABLE smartsheet_snapshots ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "smartsheet_select" ON smartsheet_snapshots FOR SELECT USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
-  OR user_id = auth.uid()
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
+  OR user_id = (select auth.uid())
 );
 CREATE POLICY "smartsheet_insert" ON smartsheet_snapshots FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
-  OR user_id = auth.uid()
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
+  OR user_id = (select auth.uid())
 );
 CREATE POLICY "smartsheet_update" ON smartsheet_snapshots FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
-  OR user_id = auth.uid()
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
+  OR user_id = (select auth.uid())
 );
 
 -- AI weekly briefings: one cached, generated briefing per week.
@@ -545,7 +545,7 @@ ALTER TABLE ai_briefings ENABLE ROW LEVEL SECURITY;
 
 -- manager/admin may read briefings directly; the API route writes via service role.
 CREATE POLICY "briefings_select" ON ai_briefings FOR SELECT USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
+  EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
 );
 
 -- Indexes on the foreign keys and hot query paths. Postgres does not index FKs
