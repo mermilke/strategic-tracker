@@ -9,6 +9,33 @@ import { startOfWeek, format } from 'date-fns'
 
 const toLetter = (i: number) => String.fromCharCode(65 + i)
 
+// Shapes for the direct report's own objective tree, returned by the join below
+// (strategic_objectives -> sub_objectives -> weekly_checkins). These mirror the
+// generated Supabase row types for just the fields this view reads.
+type DRCheckin = {
+  week_start: string
+  status: string
+  progress_this_week: string | null
+  support_needed: string | null
+  comments: string | null
+  discuss_in_meeting: boolean | null
+}
+type DRSub = {
+  id: string
+  title: string
+  is_active: boolean | null
+  sort_order: number | null
+  weekly_checkins: DRCheckin[] | null
+}
+type DRObjective = {
+  id: string
+  title: string
+  target_date: string | null
+  is_active: boolean | null
+  sort_order: number | null
+  sub_objectives: DRSub[] | null
+}
+
 export default function DirectReportDashboard({ currentUser }: {
   currentUser: { id: string; full_name?: string | null }
 }) {
@@ -16,9 +43,9 @@ export default function DirectReportDashboard({ currentUser }: {
   const searchParams = useSearchParams()
   const viewAsId = searchParams.get('viewAs')
   const checkinHref = viewAsId ? `/checkin?viewAs=${viewAsId}` : '/checkin'
-  const [objectives, setObjectives] = useState<any[]>([])
+  const [objectives, setObjectives] = useState<DRObjective[]>([])
   const [loading, setLoading] = useState(true)
-  const [checkinMap, setCheckinMap] = useState<Record<string, any>>({})
+  const [checkinMap, setCheckinMap] = useState<Record<string, DRCheckin>>({})
   const thisWeek = getCurrentWeekStart()
   const [selectedWeek, setSelectedWeek] = useState(thisWeek)
 
@@ -54,7 +81,7 @@ export default function DirectReportDashboard({ currentUser }: {
   }, [currentUser, selectedWeek])
 
   async function loadData() {
-    const { data: objs } = await supabase
+    const { data } = await supabase
       .from('strategic_objectives')
       .select(`*, sub_objectives(*, weekly_checkins(*))`)
       .eq('owner_id', currentUser.id)
@@ -62,7 +89,8 @@ export default function DirectReportDashboard({ currentUser }: {
       .order('sort_order')
       .order('created_at')
 
-    if (!objs) { setLoading(false); return }
+    if (!data) { setLoading(false); return }
+    const objs = data as unknown as DRObjective[]
 
     objs.forEach(obj => {
       if (obj.sub_objectives) {
@@ -72,7 +100,7 @@ export default function DirectReportDashboard({ currentUser }: {
       }
     })
 
-    const map: Record<string, any> = {}
+    const map: Record<string, DRCheckin> = {}
     objs.forEach(obj => {
       obj.sub_objectives?.forEach(sub => {
         const entry = sub.weekly_checkins?.find(c => c.week_start === selectedWeek)
@@ -185,7 +213,7 @@ export default function DirectReportDashboard({ currentUser }: {
             </div>
 
             <div className="space-y-2 pl-4">
-              {(obj.sub_objectives || []).filter((s: any) => s.is_active !== false).map((sub: any, subIdx: number) => {
+              {(obj.sub_objectives || []).filter(s => s.is_active !== false).map((sub, subIdx) => {
                 const c = checkinMap[sub.id]
                 const status = c?.status
                 const tint = statusTint(status)
