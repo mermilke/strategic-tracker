@@ -286,6 +286,6 @@ Features I'd add next, roughly in order of value:
 
 ## License
 
-Copyright © 2026. All rights reserved. The code is here to read, not to reuse
+Copyright © 2026 Mercedes Milke. All rights reserved. The code is here to read, not to reuse
 (see [LICENSE](LICENSE)). It isn't licensed for reuse, redistribution, or
 deployment.
