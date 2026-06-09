@@ -92,10 +92,17 @@ the unit tests exercise.
 ## Testing & CI
 
 Vitest covers the date and status logic (`lib/`) plus the dashboard and admin
-React components (jsdom + Testing Library). GitHub Actions runs the type check,
-the tests, and a production build on every push and pull request.
-The build step passes placeholder Supabase vars so Next can prerender; real keys
-are only needed at runtime.
+React components (jsdom + Testing Library). A separate suite of integration
+tests exercises the row-level-security policies as real signed-in users against
+a local Supabase stack (`npm run test:integration`).
+
+GitHub Actions runs two jobs on every push and pull request. The first does the
+type check, a schema-sync check (that `supabase_setup.sql` still matches the
+migrations), the unit tests, and a production build -- the build step passes
+placeholder Supabase vars so Next can prerender; real keys are only needed at
+runtime. The second stands up a local Supabase stack and runs the RLS
+integration tests, so a change that weakens a policy fails CI rather than
+passing on the unit tests alone.
 
 ## Things I'd do differently / next
 
