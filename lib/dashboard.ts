@@ -21,14 +21,18 @@ type SubObjective = {
 
 // Consecutive weeks with no update, counting back from selectedWeek. A sub whose
 // most recent check-in is "completed" needs no further updates, so it returns 0.
-// weekOptions is the ascending list of week_start strings the dashboard knows about.
+// weekOptions is the list of week_start strings the dashboard knows about; it's
+// normally ascending, but we sort a copy here so the count is correct even if a
+// caller passes it the other way round (week_start is YYYY-MM-DD, so a plain
+// string sort is chronological).
 export function calcWeeksNoProgress(
   sub: SubObjective,
   weekOptions: string[],
   selectedWeek: string
 ): number {
-  const selectedIdx = weekOptions.indexOf(selectedWeek)
-  const relevantWeeks = selectedIdx >= 0 ? weekOptions.slice(0, selectedIdx + 1) : weekOptions
+  const weeks = [...weekOptions].sort()
+  const selectedIdx = weeks.indexOf(selectedWeek)
+  const relevantWeeks = selectedIdx >= 0 ? weeks.slice(0, selectedIdx + 1) : weeks
 
   // completed subs don't need updates
   const latestCheckin = [...relevantWeeks].reverse().reduce<Checkin | null | undefined>(

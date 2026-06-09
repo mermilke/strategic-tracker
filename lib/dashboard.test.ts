@@ -41,4 +41,10 @@ describe('calcWeeksNoProgress', () => {
   it('falls back to all weeks when the selected week is unknown', () => {
     expect(calcWeeksNoProgress(sub([]), weeks, '2025-12-01')).toBe(3)
   })
+
+  it('gives the same answer when weekOptions is passed newest-first', () => {
+    const descending = [...weeks].reverse()
+    const s = sub([{ week_start: '2026-01-05', progress_this_week: true }])
+    expect(calcWeeksNoProgress(s, descending, last)).toBe(2)
+  })
 })
