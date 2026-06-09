@@ -231,8 +231,11 @@ A separate suite of row-level-security integration tests runs against a local
 Supabase Postgres, exercising the RLS policies as real signed-in users:
 
 ```bash
-npm run test:integration   # needs Docker + `npx supabase start`
+npm run test:integration   # needs Docker, Node 22+, and `npx supabase start`
 ```
+
+(Node 22+ only for this suite -- the supabase-js client it signs in with needs a
+global `WebSocket`, which Node ships from 22. The app and unit tests run on 20.)
 
 GitHub Actions type-checks, verifies `supabase_setup.sql` is in sync with the
 migrations, runs the unit tests, and does a production build on every push and
@@ -300,6 +303,10 @@ Things I'm aware of and would improve given time:
   row can't be corrupted, but two managers generating at the same instant would
   both miss the cache and both call the model. Claiming the row first
   (insert-on-conflict) or a short advisory lock would stop the double spend.
+- **A few client components still type some Supabase results loosely.** Most
+  query results and state are typed against the generated row types, but a handful
+  of form-state maps and the streamed-briefing JSON walker still use `any` where
+  tightening them buys little. Finishing that is mechanical.
 
 Features I'd add next, roughly in order of value:
 

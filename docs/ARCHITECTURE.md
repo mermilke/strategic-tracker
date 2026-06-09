@@ -25,7 +25,8 @@ The core of the schema is a handful of tables, all keyed off Supabase auth:
   carry an `opportunity_target` to become a count-based goal (e.g. "close 5
   pilots"), in which case its deals live in `objective_opportunities`.
 - `weekly_checkins` -- one row per sub-objective per week (`UNIQUE(sub_objective_id,
-  week_start)`), holding the status enum and the report's notes.
+  week_start)`), holding the status (a text field constrained to a fixed set of
+  values) and the report's notes.
 - `meeting_notes` -- a shared notes doc per person per week for 1:1s.
 - `ai_briefings` -- one cached, generated briefing per week.
 
