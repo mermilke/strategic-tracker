@@ -51,23 +51,12 @@ CREATE TABLE IF NOT EXISTS weekly_checkins (
   UNIQUE(sub_objective_id, week_start)
 );
 
--- 5. WEEKLY REMINDERS (tracks who submitted each week)
-CREATE TABLE IF NOT EXISTS weekly_reminders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  week_start DATE NOT NULL,
-  reminder_sent_at TIMESTAMP WITH TIME ZONE,
-  submitted BOOLEAN DEFAULT false,
-  UNIQUE(user_id, week_start)
-);
-
 -- Row level security (RLS)
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE strategic_objectives ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sub_objectives ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weekly_checkins ENABLE ROW LEVEL SECURITY;
-ALTER TABLE weekly_reminders ENABLE ROW LEVEL SECURITY;
 
 -- Helper: is the caller a manager or admin? SECURITY DEFINER so it can be used
 -- inside the users policy below without the policy recursively evaluating itself
@@ -177,12 +166,6 @@ CREATE POLICY "checkins_insert_own" ON weekly_checkins FOR INSERT WITH CHECK (
   )
 );
 CREATE POLICY "checkins_update_own" ON weekly_checkins FOR UPDATE USING (submitted_by = auth.uid());
-
--- Reminders
-CREATE POLICY "reminders_select_own" ON weekly_reminders FOR SELECT USING (
-  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
-  OR user_id = auth.uid()
-);
 
 -- Trigger: auto-create user profile on signup.
 CREATE OR REPLACE FUNCTION public.handle_new_user()

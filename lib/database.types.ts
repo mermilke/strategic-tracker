@@ -614,38 +614,6 @@ export type Database = {
           },
         ]
       }
-      weekly_reminders: {
-        Row: {
-          id: string
-          reminder_sent_at: string | null
-          submitted: boolean | null
-          user_id: string
-          week_start: string
-        }
-        Insert: {
-          id?: string
-          reminder_sent_at?: string | null
-          submitted?: boolean | null
-          user_id: string
-          week_start: string
-        }
-        Update: {
-          id?: string
-          reminder_sent_at?: string | null
-          submitted?: boolean | null
-          user_id?: string
-          week_start?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "weekly_reminders_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
