@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { getAuthenticatedUser } from '../../../lib/auth'
 import { oauthExpiresAt } from '../../../lib/utils'
+import type { GraphEvent } from '../../../lib/calendar-match'
 import type { Database } from '../../../lib/database.types'
 
 export const dynamic = 'force-dynamic'
@@ -57,8 +58,8 @@ async function fetchCalendarEvents(accessToken: string, startDateTime: string, e
 
 // With Prefer=UTC, Graph returns dateTime like "2026-05-05T16:00:00.0000000"
 // (UTC, no Z). Append Z so JS parses it as UTC; client formatters show local.
-function normalizeEvent(e: any) {
-  const fix = (dt?: string) => {
+function normalizeEvent(e: GraphEvent): GraphEvent {
+  const fix = (dt?: string | null) => {
     if (!dt) return dt
     // already has Z or a +00:00 / -05:00 style offset
     if (/Z$/.test(dt) || /[+-]\d{2}:?\d{2}$/.test(dt)) return dt
@@ -161,14 +162,14 @@ export async function GET(request: Request) {
     }
 
     const calData = await calRes.json()
-    let events = calData.value || []
+    let events: GraphEvent[] = calData.value || []
 
     // Graph keeps returning cancelled events, drop them
-    events = events.filter((e: any) => !e.isCancelled)
+    events = events.filter((e) => !e.isCancelled)
 
     if (search) {
       const searchLower = search.toLowerCase()
-      events = events.filter((e: any) => e.subject?.toLowerCase().includes(searchLower))
+      events = events.filter((e) => e.subject?.toLowerCase().includes(searchLower))
     }
 
     // cap the list, then normalize datetimes so the client parses them as UTC

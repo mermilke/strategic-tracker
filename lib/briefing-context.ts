@@ -4,7 +4,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 import { oauthExpiresAt } from './utils'
-import { isOneOnOneSubject } from './calendar-match'
+import { isOneOnOneSubject, type GraphEvent } from './calendar-match'
 
 type Admin = SupabaseClient<Database>
 
@@ -27,16 +27,6 @@ function newAdminClient(): Admin {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
-}
-
-// The parts of a Microsoft Graph calendar event the briefing reads.
-type GraphEvent = {
-  subject?: string | null
-  start?: { dateTime?: string | null } | null
-  end?: { dateTime?: string | null } | null
-  isAllDay?: boolean
-  isCancelled?: boolean
-  organizer?: unknown
 }
 
 type CalendarResult = { events: GraphEvent[]; error: string | null }

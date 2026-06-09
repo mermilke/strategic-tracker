@@ -4,6 +4,23 @@
 // calendar event this person's 1:1?" -- so the matching lives here once instead
 // of drifting between two copies.
 
+// A Microsoft Graph calendar event, narrowed to the fields the app actually
+// reads. The briefing, the reminder cron, and the calendar route all consume
+// Graph events, so they share this one shape rather than each re-declaring it.
+// Everything is optional/nullable because Graph only returns the $select-ed
+// fields and the callers each read a different subset.
+export type GraphEvent = {
+  subject?: string | null
+  start?: { dateTime?: string | null; date?: string | null } | null
+  end?: { dateTime?: string | null; date?: string | null } | null
+  location?: { displayName?: string | null } | null
+  isAllDay?: boolean | null
+  isCancelled?: boolean | null
+  showAs?: string | null
+  organizer?: unknown
+  webLink?: string | null
+}
+
 // Candidate calendar-subject patterns for a DR's 1:1, built from their first
 // name and the manager's. Covers the common ways people title recurring 1:1s
 // ("Dana 121", "Sam - Dana", "Dana / Sam"). Subjects that don't follow any of

@@ -3,19 +3,11 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { createHash, timingSafeEqual } from 'crypto'
 import { oauthExpiresAt } from '../../../../lib/utils'
-import { isOneOnOneSubject } from '../../../../lib/calendar-match'
+import { isOneOnOneSubject, type GraphEvent } from '../../../../lib/calendar-match'
 import type { Database } from '../../../../lib/database.types'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-// Minimal shape of a Microsoft Graph calendar event, just the fields we read.
-type GraphEvent = {
-  subject?: string
-  start?: { dateTime?: string; date?: string }
-  end?: { dateTime?: string; date?: string }
-  isCancelled?: boolean
-}
 
 // A calendar event tagged with its date/week in the DR's timezone.
 type TaggedMeeting = {
