@@ -274,6 +274,20 @@ Things I'm aware of and would improve given time:
 - **Reminders fire on a fixed UTC schedule.** The cron pings a handful of UTC
   times to approximate 4pm across regions rather than each report's exact local
   time. Per-user scheduled jobs would be more precise.
+- **The reminder cron queries one report at a time.** Each run loops the direct
+  reports and fetches calendar, reminder history, and check-in state per person.
+  That's fine for a team of five to ten, but it wouldn't scale to hundreds;
+  batching those lookups into grouped queries and a single calendar pull is the
+  fix.
+- **Microsoft OAuth tokens are stored unencrypted.** They live in a table locked
+  to the service role with row-level security and no client policies, so the app
+  never hands them out, but at rest they're plaintext. Encrypting them with
+  Supabase Vault / pgsodium would be the production-grade step.
+- **Briefing generation isn't guarded against a concurrent double-run.** The
+  weekly AI briefing is cached per week behind a unique constraint, so the stored
+  row can't be corrupted, but two managers generating at the same instant would
+  both miss the cache and both call the model. Claiming the row first
+  (insert-on-conflict) or a short advisory lock would stop the double spend.
 
 Features I'd add next, roughly in order of value:
 
