@@ -3,6 +3,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
+import { oauthExpiresAt } from './utils'
 
 type Admin = SupabaseClient<Database>
 
@@ -103,7 +104,7 @@ async function fetchManagerCalendar(admin: Admin, daysAhead = 14): Promise<Calen
         await admin.from('microsoft_tokens').update({
           access_token: refreshed.access_token,
           refresh_token: refreshed.refresh_token || row.refresh_token,
-          expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+          expires_at: oauthExpiresAt(refreshed.expires_in),
         }).eq('user_id', row.user_id)
       }
       const events = await tryGraph(token)

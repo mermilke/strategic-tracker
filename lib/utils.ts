@@ -93,3 +93,14 @@ export function toLetter(i: number): string {
 export function fmtDate(d: string | number | Date | null | undefined): string {
   return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''
 }
+
+// Microsoft's OAuth token response gives expires_in as seconds until expiry.
+// Guard against a missing or non-numeric value, which would otherwise make
+// `new Date(NaN).toISOString()` throw; fall back to a conservative one hour.
+export function oauthExpiresAt(expiresIn: unknown): string {
+  const seconds =
+    typeof expiresIn === 'number' && Number.isFinite(expiresIn) && expiresIn > 0
+      ? expiresIn
+      : 3600
+  return new Date(Date.now() + seconds * 1000).toISOString()
+}

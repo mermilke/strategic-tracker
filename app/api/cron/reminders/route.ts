@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { createHash, timingSafeEqual } from 'crypto'
+import { oauthExpiresAt } from '../../../../lib/utils'
 import type { Database } from '../../../../lib/database.types'
 
 export const dynamic = 'force-dynamic'
@@ -78,13 +80,22 @@ function getTodayDateInTimezone(timezone: string) {
   return localNow.toISOString().split('T')[0]
 }
 
+// Constant-time compare so the header check doesn't leak the secret through
+// response timing. Hashing both sides first makes the buffers equal length
+// (timingSafeEqual throws otherwise) and hides their lengths too.
+function safeEqual(a: string, b: string) {
+  const ah = createHash('sha256').update(a).digest()
+  const bh = createHash('sha256').update(b).digest()
+  return timingSafeEqual(ah, bh)
+}
+
 function verifyCronAuth(request: Request) {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
   // Fail closed: with no secret configured the endpoint stays locked rather
   // than open to anyone, since it can send email.
-  if (!cronSecret) return false
-  return authHeader === `Bearer ${cronSecret}`
+  if (!cronSecret || !authHeader) return false
+  return safeEqual(authHeader, `Bearer ${cronSecret}`)
 }
 
 async function getAccessToken(supabaseAdmin: SupabaseClient<Database>) {
@@ -127,7 +138,7 @@ async function getAccessToken(supabaseAdmin: SupabaseClient<Database>) {
       await supabaseAdmin.from('microsoft_tokens').update({
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token || tokenData.refresh_token,
-        expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+        expires_at: oauthExpiresAt(tokens.expires_in),
       }).eq('user_id', user.id)
     }
 

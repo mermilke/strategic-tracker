@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
 import { getAuthenticatedUser } from '../../../../lib/auth'
+import { oauthExpiresAt } from '../../../../lib/utils'
 import type { Database } from '../../../../lib/database.types'
 
 export async function GET(request: Request) {
@@ -74,7 +75,7 @@ export async function GET(request: Request) {
         user_id: auth.user.id,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
-        expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+        expires_at: oauthExpiresAt(tokens.expires_in),
       }, { onConflict: 'user_id' })
 
     if (upsertError) {

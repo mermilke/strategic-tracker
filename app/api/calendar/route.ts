@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { getAuthenticatedUser } from '../../../lib/auth'
+import { oauthExpiresAt } from '../../../lib/utils'
 import type { Database } from '../../../lib/database.types'
 
 export const dynamic = 'force-dynamic'
@@ -33,7 +34,7 @@ async function refreshAccessToken(supabaseAdmin: Admin, userId: string, refreshT
   await supabaseAdmin.from('microsoft_tokens').update({
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token || refreshToken,
-    expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+    expires_at: oauthExpiresAt(tokens.expires_in),
   }).eq('user_id', userId)
 
   return tokens.access_token
