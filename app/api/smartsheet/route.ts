@@ -42,13 +42,21 @@ export async function GET(request: Request) {
   const currentWeek = getCurrentWeekStart()
   const isHistorical = requestedWeek && requestedWeek < currentWeek
 
-  // Snapshots are keyed by user_id. A caller may read/write their own, and a
-  // manager or admin may do so for a report they're viewing in the 1:1 page;
-  // anyone else passing another id is rejected. (The DB reads/writes below also
-  // run under RLS through the session client -- this is the explicit guard.)
+  // Snapshots are keyed by user_id. A caller may read/write their own; a manager
+  // or admin may do so only for a real direct report they're viewing in the 1:1
+  // page. Any other id -- another manager/admin, or a non-existent user -- is
+  // rejected, so a privileged caller can't file or read a snapshot under an
+  // arbitrary id. (The session client also runs under RLS; this is the app guard.)
   const isManager = auth.profile.role === 'manager' || auth.profile.role === 'admin'
-  if (userId && userId !== auth.user.id && !isManager) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (userId && userId !== auth.user.id) {
+    if (!isManager) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    const supabase = await getSupabase()
+    const { data: target } = await supabase.from('users').select('role').eq('id', userId).single()
+    if (!target || target.role !== 'direct_report') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
   }
 
   // historical week: read the DB snapshot instead of hitting Smartsheet
@@ -92,7 +100,8 @@ export async function GET(request: Request) {
     })
 
     if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to fetch sheet' }, { status: res.status })
+      console.error('Smartsheet fetch failed:', res.status)
+      return NextResponse.json({ error: 'Failed to fetch sheet' }, { status: 502 })
     }
 
     const sheet = await res.json()
