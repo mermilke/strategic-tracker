@@ -2,6 +2,7 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { calcWeeksNoProgress, STATUS_PROGRESS, STATUS_BAR_COLOR } from '../../lib/dashboard'
 import { toLetter } from '../../lib/utils'
+import { onActivate } from '../../lib/a11y'
 import type { DashUser } from './types'
 
 // The compact per-report grid at the top of the overview: one tile per direct report,
@@ -17,16 +18,19 @@ export default function SnapshotTiles({ data, weekOptions, selectedWeek, setExpa
   return (
     <div className="grid gap-3 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
       {data.map(u => {
+        const expandUser = () => {
+          setExpandedUsers(prev => { const n = new Set(prev); n.add(u.id); return n; })
+          setTimeout(() => {
+            const el = document.getElementById(`user-${u.id}`)
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }, 100)
+        }
         return (
           <div key={u.id} className="rounded-xl p-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
             <div className="font-semibold text-sm mb-2 truncate cursor-pointer" style={{ color: 'var(--text-primary)' }}
-              onClick={() => {
-                setExpandedUsers(prev => { const n = new Set(prev); n.add(u.id); return n; })
-                setTimeout(() => {
-                  const el = document.getElementById(`user-${u.id}`)
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }, 100)
-              }}
+              role="button" tabIndex={0} aria-label={`Expand ${u.full_name}`}
+              onClick={expandUser}
+              onKeyDown={onActivate(expandUser)}
               onMouseOver={e => e.currentTarget.style.color = '#2563EB'}
               onMouseOut={e => e.currentTarget.style.color = 'var(--text-primary)'}
             >{u.full_name}</div>
@@ -53,19 +57,22 @@ export default function SnapshotTiles({ data, weekOptions, selectedWeek, setExpa
                       const pct = isOpp
                         ? Math.min(100, Math.round((oppFilled / oppTarget) * 100))
                         : (STATUS_PROGRESS[status] || 5)
+                      const openSub = () => {
+                        setExpandedUsers(prev => { const n = new Set(prev); n.add(u.id); return n; })
+                        setHighlightedSub(sub.id)
+                        setTimeout(() => {
+                          const el = document.getElementById(`sub-${sub.id}`)
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        }, 100)
+                        setTimeout(() => setHighlightedSub(null), 3000)
+                      }
                       return (
                         <div key={sub.id} className="flex items-center gap-1.5 mb-0.5 cursor-pointer rounded px-1 transition-all"
                           style={{ cursor: 'pointer', marginLeft: 10 }}
+                          role="button" tabIndex={0} aria-label={`Open ${sub.short_title || sub.title}`}
                           title={sub.short_title || sub.title}
-                          onClick={() => {
-                            setExpandedUsers(prev => { const n = new Set(prev); n.add(u.id); return n; })
-                            setHighlightedSub(sub.id)
-                            setTimeout(() => {
-                              const el = document.getElementById(`sub-${sub.id}`)
-                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                            }, 100)
-                            setTimeout(() => setHighlightedSub(null), 3000)
-                          }}
+                          onClick={openSub}
+                          onKeyDown={onActivate(openSub)}
                           onMouseOver={e => e.currentTarget.style.background = '#B4E4ED'}
                           onMouseOut={e => e.currentTarget.style.background = 'transparent'}
                         >

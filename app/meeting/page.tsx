@@ -904,6 +904,7 @@ function MeetingContent() {
               <textarea
                 value={notes}
                 onChange={handleNotesChange}
+                aria-label="1:1 meeting notes"
                 placeholder={`Type your 1:1 meeting notes here...\n\nBoth you and ${isManager ? (selectedUserName?.split(' ')[0] || 'your team member') : 'your manager'} can edit this in real time.`}
                 className="flex-1 w-full p-5 resize-none text-sm"
                 style={{

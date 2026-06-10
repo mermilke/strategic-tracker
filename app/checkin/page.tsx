@@ -562,6 +562,7 @@ function CheckinForm() {
                             <button
                               key={val}
                               onClick={() => updateField(sub.id, 'status', val)}
+                              aria-pressed={entry.status === val}
                               className="py-0.5 px-1.5 rounded transition-all whitespace-nowrap"
                               style={{
                                 background: entry.status === val ? `${cfg.hex}25` : 'var(--bg-base)',

@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import StatusBadge from '../StatusBadge'
 import { statusTint, toLetter } from '../../lib/utils'
 import { calcWeeksNoProgress } from '../../lib/dashboard'
+import { onActivate } from '../../lib/a11y'
 import type { DashUser, HistoryModalState } from './types'
 
 // One expandable report row in the overview list: header (name, submission bar, view-as,
@@ -66,10 +67,19 @@ export default function DirectReportCard({
             👁
           </button>
 
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0"
-            style={{ color: 'var(--text-muted)', transform: expandedUsers.has(u.id) ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
+          <button
+            type="button"
+            aria-label={expandedUsers.has(u.id) ? `Collapse ${u.full_name}` : `Expand ${u.full_name}`}
+            aria-expanded={expandedUsers.has(u.id)}
+            onClick={(e) => { e.stopPropagation(); setExpandedUsers(prev => { const n = new Set(prev); if (n.has(u.id)) n.delete(u.id); else n.add(u.id); return n; }) }}
+            className="flex-shrink-0"
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', color: 'var(--text-muted)' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              style={{ transform: expandedUsers.has(u.id) ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
         </div>
 
         {/* alert chips */}
@@ -115,11 +125,14 @@ export default function DirectReportCard({
               : filterStatus === 'stale' ? obj.sub_objectives.filter(s => calcWeeksNoProgress(s, weekOptions, selectedWeek) >= 2)
               : obj.sub_objectives
             if (filterStatus !== 'all' && visibleSubs.length === 0) return null
+            const openObjHistory = () => { setExpandedModalSubs(new Set()); setHistoryModal({ type: 'objective', title: obj.title, userName: u.full_name, subs: obj.sub_objectives }) }
             return (
             <div key={obj.id} id={`obj-${obj.id}`}>
               <div className="mb-3" style={{ letterSpacing: '0.02em' }}>
                 <span
-                  onClick={() => { setExpandedModalSubs(new Set()); setHistoryModal({ type: 'objective', title: obj.title, userName: u.full_name, subs: obj.sub_objectives }) }}
+                  role="button" tabIndex={0} aria-label={`Open history for ${obj.title}`}
+                  onClick={openObjHistory}
+                  onKeyDown={onActivate(openObjHistory)}
                   style={{ fontSize: 15, fontWeight: 600, color: '#1E293B', cursor: 'pointer', textDecoration: 'none' }}
                   onMouseEnter={e => (e.target as HTMLElement).style.textDecoration = 'underline'}
                   onMouseLeave={e => (e.target as HTMLElement).style.textDecoration = 'none'}
@@ -165,13 +178,16 @@ export default function DirectReportCard({
                   const c = sub.thisWeekCheckin
                   const weeksStale = calcWeeksNoProgress(sub, weekOptions, selectedWeek)
                   const tint = statusTint(c?.status)
+                  const openSubHistory = () => setHistoryModal({ type: 'sub', title: sub.title, userName: u.full_name, subs: [sub] })
                   return (
                     <div key={sub.id} id={`sub-${sub.id}`} className="rounded-lg p-4 flex gap-3" style={{ transition: 'box-shadow 0.3s, transform 0.3s', boxShadow: highlightedSub === sub.id ? '0 0 0 2px #2563EB, 0 0 12px rgba(37, 99, 235,0.3)' : 'none', transform: highlightedSub === sub.id ? 'scale(1.01)' : 'none', background: tint.bg, border: `1px solid ${tint.border}` }}>
                       <div className="flex-shrink-0 mt-0.5" style={{ fontSize: 14 }}>📌</div>
                       <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <div
-                          onClick={() => setHistoryModal({ type: 'sub', title: sub.title, userName: u.full_name, subs: [sub] })}
+                          role="button" tabIndex={0} aria-label={`Open history for ${sub.is_implicit ? 'weekly status' : sub.title}`}
+                          onClick={openSubHistory}
+                          onKeyDown={onActivate(openSubHistory)}
                           className="text-sm flex-1 min-w-0"
                           style={{ color: tint.text, cursor: 'pointer' }}
                           onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
