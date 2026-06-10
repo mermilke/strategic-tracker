@@ -6,51 +6,49 @@
 
 Strategic Execution Platform is a full-stack web app for keeping long-term
 strategic goals visible between formal review cycles. Each direct report spends
-about a minute a week completing a lightweight check-in on their assigned
+about a minute a week completing a check-in on their assigned
 objectives. Managers get a live view of what is on track, what is at risk, who
-needs support, and what to raise in the next 1:1, plus an AI-written weekly
-briefing that summarizes the week.
+needs support, and what should be discussed in the next 1:1, plus a weekly AI
+briefing that summarizes the team.
 
-It pulls together role-based dashboards, weekly check-ins, shared 1:1 notes,
-calendar-aware reminders, and an AI-generated weekly briefing built with Claude
-through the Vercel AI Gateway.
+The app includes role-based dashboards, weekly check-ins, shared 1:1 notes,
+calendar-aware reminders, and a Claude-generated weekly briefing through the
+Vercel AI Gateway.
 
 ## What this project demonstrates
 
 - Full-stack application development with Next.js, TypeScript, Supabase, and Vercel
 - Role-based access control enforced with Supabase row-level security
-- AI feature integration with structured output, streaming responses, per-week caching, and usage/cost tracking
+- AI feature integration with structured output, streaming responses, weekly caching, and usage/cost tracking
 - Calendar-aware automation for reminder timing and 1:1 context
 - CI coverage for type-checking, unit tests, production builds, schema-sync verification, and RLS integration tests
 - Product design around a real management workflow: reducing friction, increasing accountability, and surfacing risk earlier
 
 ## Background
 
-Strategic work often loses visibility between quarterly or mid-year reviews.
-Day-to-day operational work feels more urgent, so long-term initiatives -- the
-work most tied to strategic progress -- can stall for weeks before there is a
-clear signal that something is off track.
+Strategic work is easy to lose track of between quarterly or mid-year reviews.
+The urgent work usually wins, and longer-term initiatives can sit for weeks
+before anyone has a clear signal that something is slipping.
 
-I built Strategic Execution Platform to make strategic progress visible on a
+I built the Strategic Execution Platform to make strategic progress visible on a
 weekly cadence without turning status updates into another heavy process. A
 manager assigns each direct report a small set of objectives. Each week, the
 report reviews those objectives, confirms whether progress was made, updates the
 status if needed, and flags anything that needs support or should be discussed in
-their next 1:1. The hard part of any weekly habit is friction, so the whole thing
-is built to be nearly effortless:
+their next 1:1. 
 
-- **Last week's status carries forward automatically**, so unchanged items only
+The hard part of any weekly habit is friction, so I kept the check-in simple:
+
+- **Last week's status carries forward automatically** - so unchanged items only
   need a quick confirmation.
-- **Changing a status takes one click, but asks for a short reason** -- so a slip
-  from "on track" to "at risk" never goes by unexplained.
+- **Changing a status takes one click, but asks for a short reason** - so a change
+  from "on track" to "at risk" has some context.
 - **Each check-in centers on one accountability question:** did this move this
   week?
-- **Comments are optional**, there when a report wants to add detail and never
-  required.
+- **Comments are optional** - so routine updates do not need extra explanation.
 
-The result is a continuous, honest read on strategic execution -- what's on
-track, what's stale, what needs support, and what to discuss before the next
-formal review -- instead of a twice-a-year surprise.
+The goal is to give a manager a running view of what is moving, what is stale,
+where someone needs help, and what should come up before the next formal review.
 
 It started as a tool for senior leadership, keeping a leadership team's strategic
 initiatives on track, but nothing about it is specific to the C-suite. It works
