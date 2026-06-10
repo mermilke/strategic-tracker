@@ -1,4 +1,5 @@
 'use client'
+import { useEffect, useRef } from 'react'
 import { format } from 'date-fns'
 import type { Dispatch, SetStateAction } from 'react'
 import { STATUS_HEX, STATUS_LABELS } from '../lib/utils'
@@ -15,12 +16,21 @@ export default function HistoryModal({ modal, onClose, weekOptions, expandedSubs
   expandedSubs: Set<string>
   setExpandedSubs: Dispatch<SetStateAction<Set<string>>>
 }) {
+  // Focus the dialog once on open and restore focus to the trigger on close,
+  // rather than re-focusing on every render (which stole focus from inner controls).
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const prev = document.activeElement as HTMLElement | null
+    dialogRef.current?.focus()
+    return () => prev?.focus?.()
+  }, [])
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       tabIndex={-1}
-      ref={el => el?.focus()}
+      ref={dialogRef}
       onClick={onClose}
       onKeyDown={e => { if (e.key === 'Escape') onClose() }}
       style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, outline: 'none' }}
