@@ -279,10 +279,9 @@ deployed base URL) and a `CRON_SECRET` Actions secret that matches the
 - **Reminder email** needs a Resend API key and a verified sender address.
 - **Smartsheet** stays off unless `NEXT_PUBLIC_SMARTSHEET_USER_EMAIL` is set.
 
-## Known limitations and future work
+## Known limitations
 
-This is a portfolio-ready application, not a fully enterprise-hardened system.
-The main areas I would improve next:
+Things I would improve before treating this as an enterprise production system:
 
 - **Route-level test coverage is partial.** Vitest covers the date and status
   logic and the dashboard and admin components, and a suite of integration tests
@@ -302,9 +301,11 @@ The main areas I would improve next:
   Supabase broadcast, which isn't access-controlled by row-level security the way
   the persisted notes are; moving it to a private, RLS-authorized channel would
   close that gap.
-- **Reminders fire on a fixed UTC schedule.** The cron pings a handful of UTC
-  times to approximate 4pm across regions rather than each report's exact local
-  time. Per-user scheduled jobs would be more precise.
+- **Reminder scheduling is timezone-aware but cron-driven.** GitHub Actions pings
+  the reminder endpoint at a fixed set of UTC times, and the endpoint checks each
+  report's local hour before sending, so each report is emailed at 4pm in their
+  own timezone. This works for the configured regions, but per-user scheduled jobs
+  or a queue-based scheduler would be more precise.
 - **The reminder cron queries one report at a time.** Each run loops the direct
   reports and fetches calendar, reminder history, and check-in state per person.
   That's fine for a team of five to ten, but it wouldn't scale to hundreds;
