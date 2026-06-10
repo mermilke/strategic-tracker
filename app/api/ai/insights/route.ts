@@ -435,7 +435,7 @@ export async function GET(request: Request) {
       .select('week_start, generated_at, model, cost_cents, input_tokens, output_tokens, cached_tokens, latency_ms')
       .order('week_start', { ascending: false })
       .limit(52)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) { console.error('briefing history read error:', error); return NextResponse.json({ error: 'Failed to load briefing history' }, { status: 500 }) }
     return NextResponse.json({ briefings: data || [] })
   }
 
@@ -449,7 +449,7 @@ export async function GET(request: Request) {
     .select('*')
     .eq('week_start', week_start)
     .maybeSingle()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) { console.error('briefing read error:', error); return NextResponse.json({ error: 'Failed to load briefing' }, { status: 500 }) }
   if (!data) {
     // No stored briefing. Offer generation if it's available, otherwise report
     // the feature as dormant so the card shows a quiet note rather than an error.

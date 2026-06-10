@@ -77,7 +77,8 @@ export async function POST(request: Request) {
         email: email,
       })
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 })
+        console.error('generateLink error:', error)
+        return NextResponse.json({ error: 'Could not generate a recovery link.' }, { status: 400 })
       }
       // Link straight to our reset-password page with the token_hash, skipping
       // Supabase's /auth/v1/verify endpoint. That page calls verifyOtp() client-side.
@@ -95,7 +96,6 @@ export async function POST(request: Request) {
 
   } catch (err) {
     console.error('Admin reset-password error:', err)
-    const message = err instanceof Error ? err.message : 'Server error'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
