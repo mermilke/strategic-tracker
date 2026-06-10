@@ -6,10 +6,10 @@
 
 Strategic Execution Platform is a full-stack web app for keeping long-term
 strategic goals visible between formal review cycles. Each direct report spends
-about a minute a week on a lightweight check-in of their assigned objectives,
-while the manager gets a live view of what's on track, what's at risk, who needs
-help, and what to bring up in the next 1:1, plus an AI-written weekly briefing
-that sums it up.
+about a minute a week completing a lightweight check-in on their assigned
+objectives. Managers get a live view of what is on track, what is at risk, who
+needs support, and what to raise in the next 1:1, plus an AI-written weekly
+briefing that summarizes the week.
 
 It pulls together role-based dashboards, weekly check-ins, shared 1:1 notes,
 calendar-aware reminders, and an AI-generated weekly briefing built with Claude
@@ -27,9 +27,9 @@ through the Vercel AI Gateway.
 ## Background
 
 Strategic work often loses visibility between quarterly or mid-year reviews.
-Day-to-day operational work feels more urgent, so the long-term initiatives -- the
-ones that actually move the business -- can stall for weeks before there's a clear
-signal that something is off track.
+Day-to-day operational work feels more urgent, so long-term initiatives -- the
+work most tied to strategic progress -- can stall for weeks before there is a
+clear signal that something is off track.
 
 I built Strategic Execution Platform to make strategic progress visible on a
 weekly cadence without turning status updates into another heavy process. A
@@ -39,8 +39,8 @@ status if needed, and flags anything that needs support or should be discussed i
 their next 1:1. The hard part of any weekly habit is friction, so the whole thing
 is built to be nearly effortless:
 
-- **Last week's status carries forward automatically.** If nothing changed, there
-  is nothing to do.
+- **Last week's status carries forward automatically**, so unchanged items only
+  need a quick confirmation.
 - **Changing a status takes one click, but asks for a short reason** -- so a slip
   from "on track" to "at risk" never goes by unexplained.
 - **Each check-in centers on one accountability question:** did this move this
@@ -95,9 +95,9 @@ The manager's team overview, with every report's objectives at a glance:
 - Shared 1:1 notes per person per week, with file and link attachments and the
   next scheduled 1:1 pulled from the calendar.
 - A weekly AI briefing: a Claude-generated summary with a headline, risks,
-  momentum, and per-person talking points for upcoming 1:1s. It streams in as the
-  model writes it and is cached per week, with token usage and cost recorded
-  alongside each one.
+  momentum, and per-person talking points for upcoming 1:1s. The briefing streams
+  as it is generated, is cached per week, and records token usage and estimated
+  cost.
 
 ### Automation
 
@@ -277,7 +277,7 @@ deployed base URL) and a `CRON_SECRET` Actions secret that matches the
   and `MANAGER_CALENDAR_EMAIL` set to the shared mailbox. It drives the "next 1:1"
   lookup and the reminder timing.
 - **Reminder email** needs a Resend API key and a verified sender address.
-- **Smartsheet** stays off unless `NEXT_PUBLIC_SMARTSHEET_USER_EMAIL` is set.
+- The optional **Smartsheet** feed is disabled unless `NEXT_PUBLIC_SMARTSHEET_USER_EMAIL` is set.
 
 ## Known limitations
 
