@@ -2,48 +2,59 @@
 
 [![CI](https://github.com/mermilke/strategic-execution-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-execution-platform/actions/workflows/ci.yml)
 
-**▶ [Live demo](https://strategic-execution.vercel.app)** -- one click, no signup, as a manager or a team member.
+**▶ [Live demo](https://strategic-execution.vercel.app)** -- one click, no signup, as a manager or a direct report.
 
-Strategic Execution Platform keeps a management team aligned on its long-term
-goals. Each
-direct report spends about a minute a week marking where their strategic
-objectives stand; the manager gets a live dashboard of what's on track, what's
-at risk, who needs help, and what to bring up in the next 1:1, plus an AI-written
-weekly briefing that sums it up.
+Strategic Execution Platform is a full-stack web app for keeping long-term
+strategic goals visible between formal review cycles. Each direct report spends
+about a minute a week on a lightweight check-in of their assigned objectives,
+while the manager gets a live view of what's on track, what's at risk, who needs
+help, and what to bring up in the next 1:1, plus an AI-written weekly briefing
+that sums it up.
+
+It pulls together role-based dashboards, weekly check-ins, shared 1:1 notes,
+calendar-aware reminders, and an AI-generated weekly briefing built with Claude
+through the Vercel AI Gateway.
+
+## What this project demonstrates
+
+- Full-stack application development with Next.js, TypeScript, Supabase, and Vercel
+- Role-based access control enforced with Supabase row-level security
+- AI feature integration with structured output, streaming responses, per-week caching, and usage/cost tracking
+- Calendar-aware automation for reminder timing and 1:1 context
+- CI coverage for type-checking, unit tests, production builds, schema-sync verification, and RLS integration tests
+- Product design around a real management workflow: reducing friction, increasing accountability, and surfacing risk earlier
 
 ## Background
 
-Strategy is the first thing to slip when everyone is heads-down on this week's
-fires. The day-to-day tactical work always feels more urgent, so the long-term
-initiatives -- the ones that actually move the business -- quietly stall. You can
-spend all year chopping wood and never stop to sharpen the axe. The usual
-checkpoint is a quarterly or mid-year review, and by then a stalled initiative
-has already lost months.
+Strategic work often loses visibility between quarterly or mid-year reviews.
+Day-to-day operational work feels more urgent, so the long-term initiatives -- the
+ones that actually move the business -- can stall for weeks before there's a clear
+signal that something is off track.
 
-I built Strategic Execution Platform to close that gap. A manager assigns each direct report
-a few strategic objectives, and every week each report takes about a minute to
-say where those objectives stand. The hard part of any weekly habit is friction:
-if it feels like a chore, people stop doing it. So the whole thing is built to be
-nearly effortless --
+I built Strategic Execution Platform to make strategic progress visible on a
+weekly cadence without turning status updates into another heavy process. A
+manager assigns each direct report a small set of objectives. Each week, the
+report reviews those objectives, confirms whether progress was made, updates the
+status if needed, and flags anything that needs support or should be discussed in
+their next 1:1. The hard part of any weekly habit is friction, so the whole thing
+is built to be nearly effortless:
 
-- **Last week's status carries over automatically.** If nothing changed, there
+- **Last week's status carries forward automatically.** If nothing changed, there
   is nothing to do.
-- **Changing a status takes one click, but it asks for a short reason** -- so a
-  slip from "on track" to "at risk" never goes by unexplained.
-- **The one thing everyone confirms each week is a single yes/no:** did this move
-  this week? That question is what drives visibility and accountability.
+- **Changing a status takes one click, but asks for a short reason** -- so a slip
+  from "on track" to "at risk" never goes by unexplained.
+- **Each check-in centers on one accountability question:** did this move this
+  week?
 - **Comments are optional**, there when a report wants to add detail and never
   required.
 
-The result is a continuous, honest read on the strategic work instead of a
-twice-a-year surprise. The manager gets quick-glance status tiles, an AI summary
-of the week, and calendar context showing when each check-in is due and when the
-next 1:1 is, so that meeting is spent on the real blockers rather than gathering
-status.
+The result is a continuous, honest read on strategic execution -- what's on
+track, what's stale, what needs support, and what to discuss before the next
+formal review -- instead of a twice-a-year surprise.
 
-It started as a tool for senior leadership -- keeping a leadership team's
-strategic initiatives on track -- but nothing about it is specific to the
-C-suite. It works for any manager and their team.
+It started as a tool for senior leadership, keeping a leadership team's strategic
+initiatives on track, but nothing about it is specific to the C-suite. It works
+for any manager and their team.
 
 ## Screenshots
 
@@ -61,52 +72,52 @@ The manager's team overview, with every report's objectives at a glance:
 
 ## What it does
 
-For direct reports:
+### Direct report workflow
 
-- A weekly check-in form that pre-fills last week's status for each
-  sub-objective, so an update takes about a minute.
-- Each item captures a status (on track, at risk, off track, on hold, not
-  started, completed), whether any progress was made, a "needs support" flag, a
-  "discuss in the 1:1" flag, and free-text comments.
+- Complete a weekly check-in for assigned objectives and sub-objectives, starting
+  from last week's status so unchanged items take only a few seconds to confirm.
+- Mark each item as on track, at risk, off track, on hold, not started, or
+  completed, and record whether any progress was made.
+- Flag items that need manager support or should be discussed in the next 1:1.
+- Add optional comments when more context helps.
 
-For the manager or an admin:
+### Manager and admin workflow
 
-- A team overview with one tile per person, showing every objective and
-  sub-objective at a glance and color-coded by status. Anything that hasn't
-  moved in a couple of weeks picks up a stale counter.
-- Filters for the things you actually chase: missing submissions, at-risk
-  items, anything flagged for support, or items with no recent update.
+- A team overview with one tile per person, every objective and sub-objective
+  color-coded by status, and a stale counter on anything that hasn't moved in a
+  couple of weeks.
+- Filters for the common follow-up categories: missing submissions, at-risk
+  items, support needs, and items with no recent update.
 - Per-person history with the full week-by-week trail for any objective.
-- Opportunity objectives, which are a different kind of goal measured by a count
-  (say, "close 5 enterprise pilots") with the individual deals listed under it.
-- An analytics view with trends across the team.
-- A Weekly Briefing: a Claude-generated summary of the week, with a headline,
-  risks, momentum, and per-person talking points for upcoming 1:1s. It streams
-  in as the model writes it and is cached per week, with the token usage and
-  cost recorded alongside each one.
-- 1:1 notes: a shared notes pad per person per week that syncs in real time,
-  takes file and link attachments, and shows the next scheduled 1:1 from the
-  calendar.
+- Opportunity objectives -- count-based goals (say, "close 5 enterprise pilots")
+  with the individual deals listed under them.
+- An analytics view with status trends across the team.
+- Shared 1:1 notes per person per week, with file and link attachments and the
+  next scheduled 1:1 pulled from the calendar.
+- A weekly AI briefing: a Claude-generated summary with a headline, risks,
+  momentum, and per-person talking points for upcoming 1:1s. It streams in as the
+  model writes it and is cached per week, with token usage and cost recorded
+  alongside each one.
 
-Automation:
+### Automation
 
 - Reminder emails that arrive at 4pm in each direct report's own timezone, the
   day before their 1:1. The logic reads the calendar, so it can tell "not due
   yet" from "overdue" from "your 1:1 was cancelled," and it stops once the
   check-in is in.
+- The reminder endpoint is protected with a cron secret and triggered by GitHub
+  Actions.
 
-## Tech
+## Tech stack
 
-- TypeScript across the app, type-checked in CI
-- Next.js 14 (App Router) and React 18
-- Supabase for Postgres, auth, row-level security, Realtime, and storage
-- The Vercel AI SDK over the Vercel AI Gateway, using Claude Sonnet for the
-  briefing (structured output with Zod, plus prompt caching)
-- Resend for the reminder email
-- Microsoft Graph for the shared 1:1 calendar (optional)
-- The Smartsheet API for an optional extra discussion feed
-- Recharts, date-fns, and Tailwind CSS
-- Runs on Vercel; the reminder cron is driven by GitHub Actions
+- **Frontend:** Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS
+- **Backend:** Next.js route handlers, Supabase Postgres, Supabase Auth, Supabase Storage
+- **Access control:** Supabase row-level security with manager/admin/direct-report roles
+- **AI:** the Vercel AI SDK over the Vercel AI Gateway, using Claude Sonnet for the weekly briefing
+- **AI reliability:** Zod-structured output, streamed responses, per-week caching, and token/cost tracking
+- **Automation:** GitHub Actions cron, Resend for the reminder email, Microsoft Graph for the shared 1:1 calendar
+- **Data visualization:** Recharts (with date-fns for the week math)
+- **Testing and CI:** Vitest, Testing Library, Supabase RLS integration tests, GitHub Actions
 
 ## Architecture
 
@@ -173,19 +184,23 @@ components/               Dashboards, briefing UI, charts, navbar, badges
 lib/
   supabase.ts  auth.ts    Browser and server Supabase clients
   briefing-context.ts     Assembles the data the briefing model sees
+  calendar-match.ts       Shared 1:1 calendar matcher and Graph event type
   utils.ts                Week math and status config
 supabase/migrations/      Schema source of truth (applied by the Supabase CLI)
 supabase_setup.sql        The same schema as one file for the SQL editor (generated)
 seed.sql                  Fictional demo team (optional)
 ```
 
-Access control lives in Postgres. Every table has row-level security, so a
-direct report can only read and write their own objectives and check-ins, while
-the manager and admins see everyone. The server-only routes (briefing, cron,
-admin password reset) use the service-role key and never run in the browser.
+Access control is enforced in Postgres, not just in the UI. Client-side reads and
+writes use the Supabase anon key and are constrained by row-level security, so a
+direct report can only reach their own objectives, check-ins, and notes, while
+managers and admins get the team-wide views. The server-only routes handle the
+privileged work -- AI briefing generation, reminder processing, calendar lookup,
+and admin password reset -- with the service-role key, which never reaches the
+browser.
 
-For the deeper version, including the AI briefing pipeline and the
-timezone-aware reminder logic, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+For a deeper walkthrough of the AI briefing pipeline, the timezone-aware reminder
+logic, and the data model, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Running it locally
 
@@ -205,8 +220,8 @@ of this click by click.
 3. Open the Supabase SQL editor and run [`supabase_setup.sql`](supabase_setup.sql)
    to create the schema.
 
-4. Optionally run [`seed.sql`](seed.sql) to load a fictional team to click
-   around. Sign in with any of the seeded addresses (for example the manager,
+4. Optionally run [`seed.sql`](seed.sql) to load a fictional team to explore. Sign
+   in with any of the seeded addresses (for example the manager,
    `jordan.hayes@example.com`) using the password `demo1234`.
 
 5. Start it:
@@ -218,17 +233,17 @@ of this click by click.
 If you skip the seed, sign up through the app and then change your row's `role`
 to `admin` in the Supabase `users` table to get the manager views.
 
-## Tests
+## Tests and CI
 
-Tests run on [Vitest](https://vitest.dev) and cover the date and status logic
-plus the dashboard and admin React components (jsdom + Testing Library):
+Unit tests run on [Vitest](https://vitest.dev) and cover the date and status
+logic plus the dashboard and admin React components (jsdom + Testing Library):
 
 ```bash
 npm test
 ```
 
-A separate suite of row-level-security integration tests runs against a local
-Supabase Postgres, exercising the RLS policies as real signed-in users:
+A separate suite exercises the row-level-security policies against a local
+Supabase stack, as real signed-in users:
 
 ```bash
 npm run test:integration   # needs Docker, Node 22+, and `npx supabase start`
@@ -239,8 +254,8 @@ global `WebSocket`, which Node ships from 22. The app and unit tests run on 20.)
 
 GitHub Actions type-checks, verifies `supabase_setup.sql` is in sync with the
 migrations, runs the unit tests, and does a production build on every push and
-pull request. A second job stands up a local Supabase stack and runs the
-row-level-security integration tests, so a change that weakens an RLS policy
+pull request. A separate job stands up a local Supabase stack and runs the
+row-level-security integration tests, so a change that weakens an access rule
 fails CI rather than slipping through (see
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
@@ -257,16 +272,17 @@ deployed base URL) and a `CRON_SECRET` Actions secret that matches the
 ## Optional integrations
 
 - The **AI briefing** needs `AI_GATEWAY_API_KEY`. Leave it out and everything
-  else still works; the briefing card just stays dormant.
+  else still works; the briefing feature simply stays disabled.
 - The **calendar** needs an Azure AD app with delegated `Calendars.Read.Shared`
   and `MANAGER_CALENDAR_EMAIL` set to the shared mailbox. It drives the "next 1:1"
   lookup and the reminder timing.
 - **Reminder email** needs a Resend API key and a verified sender address.
 - **Smartsheet** stays off unless `NEXT_PUBLIC_SMARTSHEET_USER_EMAIL` is set.
 
-## Limitations & future work
+## Known limitations and future work
 
-Things I'm aware of and would improve given time:
+This is a portfolio-ready application, not a fully enterprise-hardened system.
+The main areas I would improve next:
 
 - **Route-level test coverage is partial.** Vitest covers the date and status
   logic and the dashboard and admin components, and a suite of integration tests
@@ -308,7 +324,9 @@ Things I'm aware of and would improve given time:
   of form-state maps and the streamed-briefing JSON walker still use `any` where
   tightening them buys little. Finishing that is mechanical.
 
-Features I'd add next, roughly in order of value:
+## Future features
+
+Roughly in order of value:
 
 - **Comment loop** so the manager can leave a question on a specific at-risk item
   and the report sees it on their next check-in. Right now that conversation only
@@ -318,9 +336,15 @@ Features I'd add next, roughly in order of value:
 - **Objective target dates surfaced** as countdowns and overdue flags (the data
   is already there).
 - **Slack/Teams delivery** of the briefing and at-risk alerts.
+- **Configurable integrations with external work systems** such as Smartsheet,
+  OneNote, SharePoint, and other planning and documentation tools. The private
+  version of this app already supports company-specific integrations, but a
+  production version should use a native integration layer so objective updates,
+  meeting notes, and supporting context can sync automatically instead of being
+  copied manually between systems.
 
 ## License
 
-Copyright © 2026 Mercedes Milke. All rights reserved. The code is here to read, not to reuse
-(see [LICENSE](LICENSE)). It isn't licensed for reuse, redistribution, or
-deployment.
+Copyright © 2026 Mercedes Milke. All rights reserved. This repository is published
+for portfolio review and source-code visibility only. It is not licensed for
+reuse, redistribution, or deployment. See [LICENSE](LICENSE).
