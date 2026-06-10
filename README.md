@@ -16,7 +16,6 @@ Vercel AI Gateway.
 ### Live demo
 
 [Live demo](https://strategic-execution.vercel.app)
-
 Use the demo controls on the login page to view the app as either a manager or a direct report.
 
 ## What this project demonstrates
